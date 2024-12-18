@@ -1,0 +1,108 @@
+# depslib dependency file v1.0
+1734517256 source:f:\resources\code\shader+\main.cpp
+	"main.h"
+
+1734517386 f:\resources\code\shader+\main.h
+	<windows.h>
+	<memoryapi.h>
+	<processthreadsapi.h>
+	<cstdint>
+	<cstring>
+	<string>
+	<d3d8.h>
+	<d3dx8.h>
+
+1730864800 f:\new\directx8\include\d3dx8.h
+	<d3d8.h>
+	<limits.h>
+	"d3dx8math.h"
+	"d3dx8core.h"
+	"d3dx8tex.h"
+	"d3dx8mesh.h"
+	"d3dx8shape.h"
+	"d3dx8effect.h"
+
+1730864800 f:\new\directx8\include\d3d8.h
+	<stdlib.h>
+	<objbase.h>
+	<windows.h>
+	"d3d8types.h"
+	"d3d8caps.h"
+
+1730864800 f:\new\directx8\include\d3d8types.h
+	<float.h>
+
+1730864800 f:\new\directx8\include\d3d8caps.h
+
+1730864800 f:\new\directx8\include\d3dx8math.h
+	"d3dx8.h"
+	<math.h>
+	"d3dx8math.inl"
+
+1730864800 f:\new\directx8\include\d3dx8math.inl
+
+1730864800 f:\new\directx8\include\d3dx8core.h
+	"d3dx8.h"
+
+1730864800 f:\new\directx8\include\d3dx8tex.h
+	"d3dx8.h"
+
+1730864800 f:\new\directx8\include\d3dx8mesh.h
+	"d3dx8.h"
+	"dxfile.h"
+
+1733747485 f:\new\directx8\include\dxfile.h
+
+1730864800 f:\new\directx8\include\d3dx8shape.h
+	"d3dx8.h"
+
+1730864800 f:\new\directx8\include\d3dx8effect.h
+	"d3dx8.h"
+
+1037100010 f:\new\dx9.0csdk\include\d3dx8core.h
+	"d3dx8.h"
+
+1038931372 f:\new\dx9.0csdk\include\d3dx8.h
+	"d3d8.h"
+	<limits.h>
+	"d3dx8math.h"
+	"d3dx8core.h"
+	"d3dx8tex.h"
+	"d3dx8mesh.h"
+	"d3dx8shape.h"
+	"d3dx8effect.h"
+
+1038931372 f:\new\dx9.0csdk\include\d3d8.h
+	<stdlib.h>
+	<objbase.h>
+	<windows.h>
+	"d3d8types.h"
+	"d3d8caps.h"
+
+1038931372 f:\new\dx9.0csdk\include\d3d8types.h
+	<float.h>
+
+1038931372 f:\new\dx9.0csdk\include\d3d8caps.h
+
+1037100010 f:\new\dx9.0csdk\include\d3dx8math.h
+	"d3dx8.h"
+	<math.h>
+	"d3dx8math.inl"
+
+1037099708 f:\new\dx9.0csdk\include\d3dx8math.inl
+
+1037100010 f:\new\dx9.0csdk\include\d3dx8tex.h
+	"d3dx8.h"
+
+1038931374 f:\new\dx9.0csdk\include\d3dx8mesh.h
+	"d3dx8.h"
+	"dxfile.h"
+
+1733763540 f:\new\dx9.0csdk\include\dxfile.h
+
+1037100010 f:\new\dx9.0csdk\include\d3dx8shape.h
+	"d3dx8.h"
+
+1037100010 f:\new\dx9.0csdk\include\d3dx8effect.h
+	"d3dx8.h"
+

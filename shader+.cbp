@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="shader+" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/shader+" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-DBUILD_DLL" />
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="user32" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/shader+" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="3" />
+				<Option compiler="msvc10" />
+				<Option projectCompilerOptionsRelation="2" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Option projectIncludeDirsRelation="2" />
+				<Option projectResourceIncludeDirsRelation="2" />
+				<Option projectLibDirsRelation="2" />
+				<Compiler>
+					<Add option="/Gz" />
+					<Add option="/Od" />
+					<Add option="/EHsc" />
+					<Add option="/DBUILD_DLL" />
+					<Add directory="../../../New/DX9.0cSDK/Include" />
+				</Compiler>
+				<Linker>
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/kernel32.Lib" />
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/User32.Lib" />
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/WinMM.Lib" />
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/Gdi32.Lib" />
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/WinSpool.Lib" />
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/AdvAPI32.Lib" />
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/ComDlg32.Lib" />
+					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/shell32.lib" />
+					<Add library="../../../New/DX9.0cSDK/Lib/d3d8.lib" />
+					<Add library="../../../New/DX9.0cSDK/Lib/d3dx8.lib" />
+					<Add library="../../../New/DX9.0cSDK/Lib/d3dxof.lib" />
+					<Add library="../../../New/DX9.0cSDK/Lib/dxguid.lib" />
+					<Add library="../../../New/DX9.0cSDK/Lib/DxErr8.lib" />
+					<Add directory="../../../New/DX9.0cSDK/Lib" />
+				</Linker>
+				<MakeCommands>
+					<Build command="" />
+					<CompileFile command="" />
+					<Clean command="" />
+					<DistClean command="" />
+					<AskRebuildNeeded command="" />
+					<SilentBuild command=" &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="main.cpp" />
+		<Unit filename="main.h" />
+		<Extensions>
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

@@ -1,0 +1,11 @@
+LIBRARY shader+
+;IMPORTS
+   ;SelfHookCode=FleetOpsHook.SelfHookCode
+   ;ST3D_Dot3_MeshVB_Render_Next=FleetOpsHook.ST3D_Dot3_MeshVB_Render_Next
+EXPORTS
+   hookJMP
+   hookTrampoline
+   VACal
+   dot3MeshVBRender
+   createShader
+   createDot3MeshVB
