@@ -1,18 +1,13 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-//cpp std library+windows sdk
-#include <windows.h>
-#include <memoryapi.h>
-#include <processthreadsapi.h>
-#include <cstdint>
-#include <cstring>
-#include <string>
-
 //DX library
 //from dx9.0c sdk
 #include <d3d8.h>
 #include <d3dx8.h>
+
+//hook library
+#include "..\hookTools\hookTool.h"
 
  //fix bug in compile
  #pragma comment(lib, "legacy_stdio_definitions.lib")
@@ -30,22 +25,6 @@
 extern "C"
 {
 #endif
-
-//hook tool
-DLL_EXPORT void hookJMP(void*,void*);
-DLL_EXPORT void* hookVTable(void**,size_t,void*);
-DLL_EXPORT void writeVarToAddress(UINT,UINT,void*);
-DLL_EXPORT void writeVarToAddressP(void*,UINT,void*);
-DLL_EXPORT void* getClassFunctionAddress(DWORD*,int);
-DLL_EXPORT UINT getThisPtrFromECX();
-DLL_EXPORT void moveVarToECX(UINT);
-
-//TODO:
-DLL_EXPORT void hookTrampoline(void*, void*,void**);
-
-
-
-//shader+
 
 //for easier coding
 struct Vector3{
