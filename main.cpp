@@ -1,5 +1,7 @@
 #include "main.h"
 
+//temp dx version control
+int dxVersion = 9;
 //hook tool
 void (*hookJMP)(void*,void*);
 void* (*hookVTable)(void**,size_t,void*);
@@ -11,16 +13,16 @@ void (*moveVarToECX)(UINT);
 
 //Armada function
 int* (*CD3MVB)(const int*);
-int64_t* (__thiscall*ST3D_DeviceDirectX8_CreateShader)(void*,UINT*,UINT*);
-UINT(__stdcall*getShaderHandle)(int);
+int64_t* (__thiscall* ST3D_DeviceDirectX8_CreateShader)(void*,UINT*,UINT*);
+UINT (__stdcall* getShaderHandle)(int);
 
 //FO function
-int (__stdcall*D3MVB_R)(int,int,int,DWORD**);
-int (__stdcall*DR)(int,int,int,DWORD**);
+int (__stdcall* D3MVB_R)(int,int,int,DWORD**);
+int (__stdcall* DR)(int,int,int,DWORD**);
 
 //Armada pointer
 //int* storm3D=(int*)0x7AD508;
-Matrix* cameraToNode=(Matrix*)0x7AD5E0;
+Matrix* cameraToNode = (Matrix*)0x7AD5E0;
 DWORD** curTextureSet;
 UINT StormDevice;
 
@@ -36,135 +38,140 @@ IDirect3DDevice8* device;
 LPVOID psCompiled;
 DWORD PSHandle;
 
-BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
-{
+BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
     //only hook when dll is attaching
-    if(fdwReason==DLL_PROCESS_ATTACH){
+    if(fdwReason == DLL_PROCESS_ATTACH) {
         // MessageBoxA(0, "load shader+", "test", MB_OK | MB_ICONINFORMATION);
 
         int (*init)();
         int (*createHook)(LPVOID,LPVOID,LPVOID*);
         int (*enableHook)(LPVOID);
 
-        HINSTANCE minHook = LoadLibrary(".\\dll\\MinHook.x86.dll");
-        HINSTANCE hookTool = LoadLibrary(".\\dll\\hookTools.dll");
-        if(minHook==NULL){
-            MessageBoxA(0, "can not load minHook!", "test", MB_OK | MB_ICONINFORMATION);
+        HINSTANCE minHook = LoadLibrary (".\\dll\\MinHook.x86.dll");
+        HINSTANCE hookTool = LoadLibrary (".\\dll\\hookTools.dll");
+        if(minHook == NULL) {
+            MessageBoxA (0,"can not load minHook!","test",MB_OK | MB_ICONINFORMATION);
             return TRUE;
         }
-        else if(hookTool==NULL){
-            MessageBoxA(0, "can not load hookTools!", "test", MB_OK | MB_ICONINFORMATION);
+        else if(hookTool == NULL) {
+            MessageBoxA (0,"can not load hookTools!","test",MB_OK | MB_ICONINFORMATION);
             return TRUE;
         }
 
         //load hook tools
-        hookJMP=(void (*)(void*,void*))GetProcAddress(hookTool, "hookJMP");
-        hookVTable=(void* (*)(void**,size_t,void*))GetProcAddress(hookTool, "hookVTable");
-        writeVarToAddress=(void (*)(UINT,UINT,void*))GetProcAddress(hookTool, "writeVarToAddress");
-        writeVarToAddressP=(void (*)(void*,UINT,void*))GetProcAddress(hookTool, "writeVarToAddressP");
-        getClassFunctionAddress=(void* (*)(DWORD*,int))GetProcAddress(hookTool, "getClassFunctionAddress");
-        getThisPtrFromECX=(UINT (*)())GetProcAddress(hookTool, "getThisPtrFromECX");
-        moveVarToECX=(void (*)(UINT))GetProcAddress(hookTool, "moveVarToECX");
+        hookJMP = (void (*)(void*,void*))GetProcAddress (hookTool,"hookJMP");
+        hookVTable = (void* (*)(void**,size_t,void*))GetProcAddress (hookTool,"hookVTable");
+        writeVarToAddress = (void (*)(UINT,UINT,void*))GetProcAddress (hookTool,"writeVarToAddress");
+        writeVarToAddressP = (void (*)(void*,UINT,void*))GetProcAddress (hookTool,"writeVarToAddressP");
+        getClassFunctionAddress = (void* (*)(DWORD*,int))GetProcAddress (hookTool,"getClassFunctionAddress");
+        getThisPtrFromECX = (UINT (*)())GetProcAddress (hookTool,"getThisPtrFromECX");
+        moveVarToECX = (void (*)(UINT))GetProcAddress (hookTool,"moveVarToECX");
         if(
-            hookJMP==NULL||hookVTable==NULL||writeVarToAddress==NULL||writeVarToAddressP==NULL||getClassFunctionAddress==NULL||getThisPtrFromECX==NULL||moveVarToECX==NULL
-            ){
-            MessageBoxA(0, "can not  load functions in hook tools!", "test", MB_OK | MB_ICONINFORMATION);
+            hookJMP == NULL || hookVTable == NULL || writeVarToAddress == NULL || writeVarToAddressP == NULL || getClassFunctionAddress == NULL || getThisPtrFromECX == NULL || moveVarToECX == NULL
+            ) {
+            MessageBoxA (0,"can not  load functions in hook tools!","test",MB_OK | MB_ICONINFORMATION);
         }
 
         //load minHook, we use its hookTrampoline function, I haven't imp my own version
-        init = (int (*)())GetProcAddress(minHook, "MH_Initialize");
-        if(init==NULL){
-            MessageBoxA(0, "can not  load MH_Initialize!", "test", MB_OK | MB_ICONINFORMATION);
+        init = (int (*)())GetProcAddress (minHook,"MH_Initialize");
+        if(init == NULL) {
+            MessageBoxA (0,"can not  load MH_Initialize!","test",MB_OK | MB_ICONINFORMATION);
         }
-        createHook = (int (*)(LPVOID,LPVOID,LPVOID*))GetProcAddress(minHook, "MH_CreateHook");
-        if(createHook==NULL){
-            MessageBoxA(0, "can not  load MH_CreateHook!", "test", MB_OK | MB_ICONINFORMATION);
+        createHook = (int (*)(LPVOID,LPVOID,LPVOID*))GetProcAddress (minHook,"MH_CreateHook");
+        if(createHook == NULL) {
+            MessageBoxA (0,"can not  load MH_CreateHook!","test",MB_OK | MB_ICONINFORMATION);
         }
-        enableHook = (int (*)(LPVOID))GetProcAddress(minHook, "MH_EnableHook");
-        if(enableHook==NULL){
-            MessageBoxA(0, "can not  load MH_EnableHook!", "test", MB_OK | MB_ICONINFORMATION);
+        enableHook = (int (*)(LPVOID))GetProcAddress (minHook,"MH_EnableHook");
+        if(enableHook == NULL) {
+            MessageBoxA (0,"can not  load MH_EnableHook!","test",MB_OK | MB_ICONINFORMATION);
         }
 
-        init();
+        init ();
 
-//======compile shader
-        char newVertexShaderPath[]="shaders\\dx8\\vertex\\vs.nvv";
-        writeVarToAddressP((void*)0x72B580,sizeof(newVertexShaderPath),(void*)newVertexShaderPath);
-        createHook((LPVOID)0x626E50, (LPVOID)compilePixelShader, reinterpret_cast<LPVOID*>(&CD3MVB));
-        enableHook((LPVOID)0x626E50);
-
-
-//======create shader
-        //this will cause a crash, possiblely because FO using a different call method in its work
-        //createHook((LPVOID)0x6226B0, (LPVOID)createPixelShader, reinterpret_cast<LPVOID*>(&ST3D_DeviceDirectX8_CreateShader));
-        //enableHook((LPVOID)0x6226B0);
-
-        ST3D_DeviceDirectX8_CreateShader=reinterpret_cast<int64_t* (__thiscall*)(void*,UINT*,UINT*)>(hookVTable((void**)0x6BC6AC,18,(void*)createShader));
-
-//======set shader
-        //set shader in getShaderHandle
-        createHook((LPVOID)0x62C270, (LPVOID)setPixelShader, reinterpret_cast<LPVOID*>(&getShaderHandle));
-        enableHook((LPVOID)0x62C270);
-
-        //rework drawLight
-        //createHook((LPVOID)0x5A9E610C, (LPVOID)drawLight, reinterpret_cast<LPVOID*>(&DR));
-        //enableHook((LPVOID)0x5A9E610C);
-
-//======disable shader when enter fixed function pipeline
-        //at the end of dot3MeshVB::Render
-        //hookTrampoline((void*)6452640,(void*)dot3MeshVBRender);
-        createHook((LPVOID)0x5A9E6320, (LPVOID)dot3MeshVBRender, reinterpret_cast<LPVOID*>(&D3MVB_R));
-        enableHook((LPVOID)0x5A9E6320);
-
-        //at the last if of dot3MeshVB::Render
-        //this is a hack, most of time do not hook function at middle of it
-        uint8_t jmpInstruction[5] = { 0xE9, 0x0, 0x0, 0x0, 0x0};
-
-        const uint32_t relativeAddr = (uint32_t)disablePixelShaderInAlpha - ((uint32_t)0x5A9E67D1 + 5);
-        memcpy(jmpInstruction + 1, &relativeAddr, 4);
-
-        writeVarToAddress(0x5A9E67D1,sizeof(jmpInstruction),(void*)jmpInstruction);
+        if(dxVersion == 8) {
+            //======compile shader
+            char newVertexShaderPath[] = "shaders\\dx8\\vertex\\vs.nvv";
+            writeVarToAddressP ((void*)0x72B580,sizeof (newVertexShaderPath),(void*)newVertexShaderPath);
+            createHook ((LPVOID)0x626E50,(LPVOID)compilePixelShader,reinterpret_cast<LPVOID*>(&CD3MVB));
+            enableHook ((LPVOID)0x626E50);
 
 
+            //======create shader
+                    //this will cause a crash, possiblely because FO using a different call method in its work
+                    //createHook((LPVOID)0x6226B0, (LPVOID)createPixelShader, reinterpret_cast<LPVOID*>(&ST3D_DeviceDirectX8_CreateShader));
+                    //enableHook((LPVOID)0x6226B0);
+
+            ST3D_DeviceDirectX8_CreateShader = reinterpret_cast<int64_t * (__thiscall*)(void*,UINT*,UINT*)>(hookVTable ((void**)0x6BC6AC,18,(void*)createShader));
+
+            //======set shader
+                    //set shader in getShaderHandle
+            createHook ((LPVOID)0x62C270,(LPVOID)setPixelShader,reinterpret_cast<LPVOID*>(&getShaderHandle));
+            enableHook ((LPVOID)0x62C270);
+
+            //rework drawLight
+            //createHook((LPVOID)0x5A9E610C, (LPVOID)drawLight, reinterpret_cast<LPVOID*>(&DR));
+            //enableHook((LPVOID)0x5A9E610C);
+
+    //======disable shader when enter fixed function pipeline
+            //at the end of dot3MeshVB::Render
+            //hookTrampoline((void*)6452640,(void*)dot3MeshVBRender);
+            createHook ((LPVOID)0x5A9E6320,(LPVOID)dot3MeshVBRender,reinterpret_cast<LPVOID*>(&D3MVB_R));
+            enableHook ((LPVOID)0x5A9E6320);
+
+            //at the last if of dot3MeshVB::Render
+            //this is a hack, most of time do not hook function at middle of it
+            uint8_t jmpInstruction[5] = { 0xE9, 0x0, 0x0, 0x0, 0x0 };
+
+            const uint32_t relativeAddr = (uint32_t)disablePixelShaderInAlpha - ((uint32_t)0x5A9E67D1 + 5);
+            memcpy (jmpInstruction + 1,&relativeAddr,4);
+
+            writeVarToAddress (0x5A9E67D1,sizeof (jmpInstruction),(void*)jmpInstruction);
+        }
+        else if(dxVersion == 9){
+
+        }
 
 
-        FreeLibrary(minHook);
+
+
+
+        FreeLibrary (minHook);
     }
     return TRUE; // succesful
 }
 
-int* compilePixelShader(const int* mesh){
+int* compilePixelShader (const int* mesh) {
     //MessageBoxA(0, "compilePixelShader", "test", MB_OK | MB_ICONINFORMATION);
 
     //original function:ST3D_CreateDot3MeshVB(ST3D_Mesh const *)
-    int* meshOut=CD3MVB(mesh);
+    int* meshOut = CD3MVB (mesh);
 
     //compile shader from file
-    LPCSTR pixelShaderPath="shaders\\dx8\\pixel\\ps.nvv";
-    DWORD flag=0;
+    LPCSTR pixelShaderPath = "shaders\\dx8\\pixel\\ps.nvv";
+    DWORD flag = 0;
 
     LPD3DXBUFFER error;
     LPD3DXBUFFER buffer;
 
-    HRESULT result=D3DXAssembleShaderFromFileA(pixelShaderPath,flag,NULL,&buffer,&error);
+    HRESULT result = D3DXAssembleShaderFromFileA (pixelShaderPath,flag,NULL,&buffer,&error);
 
 
 
-    if(result!=0){
-        MessageBoxA(0, "error compile pixel shader!", "test", MB_OK | MB_ICONINFORMATION);
+    if(result != 0) {
+        MessageBoxA (0,"error compile pixel shader!","test",MB_OK | MB_ICONINFORMATION);
     }
-    else{
-        psCompiled=buffer->GetBufferPointer();
+    else {
+        psCompiled = buffer->GetBufferPointer ();
     }
 
     return meshOut;
 }
 
-int64_t createShader(UINT* pShader,UINT* pDeclaration){
+int64_t createShader (UINT* pShader,UINT* pDeclaration) {
     //MessageBoxA(0, "createShader", "test", MB_OK | MB_ICONINFORMATION);
 
     UINT thisPtr;
-    __asm{
+    __asm {
         call getThisPtrFromECX
         mov thisPtr,eax
     }
@@ -176,11 +183,11 @@ int64_t createShader(UINT* pShader,UINT* pDeclaration){
 
 
 
-    StormDevice=thisPtr;
+    StormDevice = thisPtr;
     //this->m_pD3DDevice
-    device=(IDirect3DDevice8*)*(DWORD*)(thisPtr+0x90);
+    device = (IDirect3DDevice8*)*(DWORD*)(thisPtr + 0x90);
     //MessageBoxA(0, std::to_string((int)device).c_str(), "test", MB_OK | MB_ICONINFORMATION);
-    
+
 
     //this is equal to upon
     /*
@@ -199,14 +206,14 @@ int64_t createShader(UINT* pShader,UINT* pDeclaration){
 
 
     //create shaders
-    HRESULT VSresult=device->CreateVertexShader((DWORD*)pDeclaration,(DWORD*)pShader,(DWORD*)&pShader,0);
-    HRESULT PSresult=device->CreatePixelShader((DWORD*)psCompiled,&PSHandle);
+    HRESULT VSresult = device->CreateVertexShader ((DWORD*)pDeclaration,(DWORD*)pShader,(DWORD*)&pShader,0);
+    HRESULT PSresult = device->CreatePixelShader ((DWORD*)psCompiled,&PSHandle);
 
-    if(VSresult!=0){
-        MessageBoxA(0, "error create vertex shader!", "test", MB_OK | MB_ICONINFORMATION);
+    if(VSresult != 0) {
+        MessageBoxA (0,"error create vertex shader!","test",MB_OK | MB_ICONINFORMATION);
     }
-    if(PSresult!=0){
-        MessageBoxA(0, "error create pixel shader!", "test", MB_OK | MB_ICONINFORMATION);
+    if(PSresult != 0) {
+        MessageBoxA (0,"error create pixel shader!","test",MB_OK | MB_ICONINFORMATION);
     }
 
     //this part of code is not correct, but i leave it for reference
@@ -234,29 +241,29 @@ int64_t createShader(UINT* pShader,UINT* pDeclaration){
 
 
 
-    //vertex shader constant which do not need update every frame
-    //FLOAT ambient[4] = {0.2,0.2,0.2,1};
-    //device->SetVertexShaderConstant(20, &ambient, 1);
+//vertex shader constant which do not need update every frame
+//FLOAT ambient[4] = {0.2,0.2,0.2,1};
+//device->SetVertexShaderConstant(20, &ambient, 1);
 
 
 
 
 
-    //MessageBoxA(0, "end create pixel shader!", "test", MB_OK | MB_ICONINFORMATION);
-    //return (UINT)handle;
-    //return (int64_t)finalShader;
+//MessageBoxA(0, "end create pixel shader!", "test", MB_OK | MB_ICONINFORMATION);
+//return (UINT)handle;
+//return (int64_t)finalShader;
     return (int64_t)pShader;
 }
 
-UINT setPixelShader(int id){
+UINT setPixelShader (int id) {
     UINT thisPtr;
-    __asm{
+    __asm {
         call getThisPtrFromECX
         mov thisPtr,eax
     }
 
     //original function
-    UINT value=getShaderHandle(id);
+    UINT value = getShaderHandle (id);
 
     //MessageBoxA(0, "set pixel shader!", "test", MB_OK | MB_ICONINFORMATION);
     //get function for set texture
@@ -290,8 +297,8 @@ UINT setPixelShader(int id){
     */
 
     //textureStage1 is set in original armada to calculate light color
-    device->SetTextureStageState(1,D3DTSS_COLOROP,2 );
-    device->SetTextureStageState(1,D3DTSS_TEXCOORDINDEX,0 );
+    device->SetTextureStageState (1,D3DTSS_COLOROP,2);
+    device->SetTextureStageState (1,D3DTSS_TEXCOORDINDEX,0);
 
 
     //set constant which need update every frame for vertex shader
@@ -300,39 +307,39 @@ UINT setPixelShader(int id){
     D3DXMATRIX matView;
 
     //7-10
-    device->GetTransform(D3DTS_WORLDMATRIX(0), &matWorld);
-    D3DXMatrixTranspose(&matTemp, &matWorld);
-    device->SetVertexShaderConstant(7, &matTemp, 4);
+    device->GetTransform (D3DTS_WORLDMATRIX (0),&matWorld);
+    D3DXMatrixTranspose (&matTemp,&matWorld);
+    device->SetVertexShaderConstant (7,&matTemp,4);
 
     //11-14
-    device->GetTransform(D3DTS_VIEW, &matView);
-    D3DXMatrixTranspose(&matTemp,&(matWorld * matView));
-    device->SetVertexShaderConstant(11, &matTemp, 4);
+    device->GetTransform (D3DTS_VIEW,&matView);
+    D3DXMatrixTranspose (&matTemp,&(matWorld * matView));
+    device->SetVertexShaderConstant (11,&matTemp,4);
 
     //15-18
-    D3DXMatrixInverse(&matTemp,NULL, &matWorld);
-    D3DXMatrixTranspose(&matTemp,&matTemp);
-    device->SetVertexShaderConstant(15, &matTemp, 4);
+    D3DXMatrixInverse (&matTemp,NULL,&matWorld);
+    D3DXMatrixTranspose (&matTemp,&matTemp);
+    device->SetVertexShaderConstant (15,&matTemp,4);
 
     //19
-    Vector3 cameraDir=cameraToNode->front;
-    device->SetVertexShaderConstant(19, &cameraDir, 1);
+    Vector3 cameraDir = cameraToNode->front;
+    device->SetVertexShaderConstant (19,&cameraDir,1);
     //std::string text=std::to_string(cameraDir.x)+','+std::to_string(cameraDir.y)+' '+std::to_string(cameraDir.z);
     //MessageBoxA(0, text.c_str(), "test", MB_OK | MB_ICONINFORMATION);
 
 
     //
-    device->SetPixelShader(PSHandle);
+    device->SetPixelShader (PSHandle);
 
     return value;
 }
 
 //call every frame
 //TODO: rework drawLight to support real per-pixel multi-light source rendering
-int drawLight(int a1, int a2, int a3, DWORD **a4){
+int drawLight (int a1,int a2,int a3,DWORD** a4) {
 
     UINT thisPtr;
-    __asm{
+    __asm {
         call getThisPtrFromECX
         mov thisPtr,eax
     }
@@ -340,30 +347,30 @@ int drawLight(int a1, int a2, int a3, DWORD **a4){
 }
 
 //call every frame
-int dot3MeshVBRender(int a1, int a2, int a3, DWORD **a4){
+int dot3MeshVBRender (int a1,int a2,int a3,DWORD** a4) {
 
     UINT thisPtr;
-    __asm{
+    __asm {
         call getThisPtrFromECX
         mov thisPtr,eax
     }
 
     //before render
     //we will use this in setPixelShader(id)
-    curTextureSet=a4;
+    curTextureSet = a4;
 
     //original FO render
-    __asm{
+    __asm {
 
-        mov     eax, a4
+        mov     eax,a4
         push    eax
-        mov     eax, a3
+        mov     eax,a3
         push    eax
-        mov     edx, a2
+        mov     edx,a2
         push    edx
-        mov     eax, a1
+        mov     eax,a1
         push    eax
-        mov     ecx, thisPtr
+        mov     ecx,thisPtr
         call D3MVB_R
     }
 
@@ -384,16 +391,16 @@ int dot3MeshVBRender(int a1, int a2, int a3, DWORD **a4){
 
 //we disable the last two DrawIndexedPrimitive, they will cause bug in current pipeline
 //better solution is rework the ST3D_Dot3_MeshVB::Render function
-__declspec(naked) void disablePixelShaderInAlpha(){
+__declspec(naked) void disablePixelShaderInAlpha () {
 
-    device->SetPixelShader(NULL);
+    device->SetPixelShader (NULL);
 
     //this is a hack, better not set render state here
     //fixed pipeline phong shading is not support in most hardware
     //but if any gpu support it, this can make sense
-    device->SetRenderState(D3DRS_SHADEMODE ,3);
+    device->SetRenderState (D3DRS_SHADEMODE,3);
 
-    __asm{
+    __asm {
         pop edi
         pop esi
         pop ebx
@@ -407,7 +414,7 @@ __declspec(naked) void disablePixelShaderInAlpha(){
 
 
 //this function seems won't call in real gaming
-void MVBcreateShader(){
-    MessageBoxA(0, "createShader", "test", MB_OK | MB_ICONINFORMATION);
+void MVBcreateShader () {
+    MessageBoxA (0,"createShader","test",MB_OK | MB_ICONINFORMATION);
     return;
 }

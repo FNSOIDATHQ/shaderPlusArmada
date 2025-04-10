@@ -1,0 +1,25 @@
+# 设置当前配置文件所在目录为项目根目录
+root = true
+
+[*.{c++,cc,cpp,cxx,h,h++,hh,hpp}]
+cpp_new_line_before_open_brace_namespace = same_line
+cpp_new_line_before_open_brace_type = same_line
+cpp_new_line_before_open_brace_function = same_line
+cpp_new_line_before_open_brace_block = same_line
+cpp_new_line_before_open_brace_lambda = same_line
+cpp_new_line_before_else = true
+cpp_new_line_before_catch = true
+cpp_indent_case_contents = true
+cpp_indent_braces = false
+cpp_indent_case_contents_when_block = false
+
+cpp_space_before_function_open_parenthesis=insert
+cpp_space_after_keywords_in_control_flow_statements = false
+cpp_space_around_binary_operator = none
+cpp_space_after_comma = false
+cpp_space_before_comma = false
+cpp_space_after_semicolon = false
+cpp_space_before_semicolon = false
+cpp_space_before_open_square_bracket = false
+cpp_space_between_empty_square_brackets = false
+# cpp_space_pointer_reference_alignment=ignore
