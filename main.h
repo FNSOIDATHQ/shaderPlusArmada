@@ -1,13 +1,17 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+//cpp std library
+#include <string>
+
 //DX library
 //from dx9.0c sdk
 #include <d3d8.h>
 #include <d3dx8.h>
 
 //hook library
-#include "..\hookTools\hookTool.h"
+//use this when coding, switch to dynamic load when compiling
+//#include "..\hookTools\hookTool.h"
 
  //fix bug in compile
  #pragma comment(lib, "legacy_stdio_definitions.lib")

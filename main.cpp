@@ -1,5 +1,14 @@
 #include "main.h"
 
+//hook tool
+void (*hookJMP)(void*,void*);
+void* (*hookVTable)(void**,size_t,void*);
+void (*writeVarToAddress)(UINT,UINT,void*);
+void (*writeVarToAddressP)(void*,UINT,void*);
+void* (*getClassFunctionAddress)(DWORD*,int);
+UINT (*getThisPtrFromECX)();
+void (*moveVarToECX)(UINT);
+
 //Armada function
 int* (*CD3MVB)(const int*);
 int64_t* (__thiscall*ST3D_DeviceDirectX8_CreateShader)(void*,UINT*,UINT*);
@@ -31,27 +40,47 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
     //only hook when dll is attaching
     if(fdwReason==DLL_PROCESS_ATTACH){
+        // MessageBoxA(0, "load shader+", "test", MB_OK | MB_ICONINFORMATION);
 
         int (*init)();
         int (*createHook)(LPVOID,LPVOID,LPVOID*);
         int (*enableHook)(LPVOID);
 
-        HINSTANCE hookToolKit = LoadLibrary(".\\dll\\MinHook.x86.dll");
-        if(hookToolKit==NULL){
-            MessageBoxA(0, "can not load hookToolKit!", "test", MB_OK | MB_ICONINFORMATION);
+        HINSTANCE minHook = LoadLibrary(".\\dll\\MinHook.x86.dll");
+        HINSTANCE hookTool = LoadLibrary(".\\dll\\hookTools.dll");
+        if(minHook==NULL){
+            MessageBoxA(0, "can not load minHook!", "test", MB_OK | MB_ICONINFORMATION);
+            return TRUE;
+        }
+        else if(hookTool==NULL){
+            MessageBoxA(0, "can not load hookTools!", "test", MB_OK | MB_ICONINFORMATION);
             return TRUE;
         }
 
+        //load hook tools
+        hookJMP=(void (*)(void*,void*))GetProcAddress(hookTool, "hookJMP");
+        hookVTable=(void* (*)(void**,size_t,void*))GetProcAddress(hookTool, "hookVTable");
+        writeVarToAddress=(void (*)(UINT,UINT,void*))GetProcAddress(hookTool, "writeVarToAddress");
+        writeVarToAddressP=(void (*)(void*,UINT,void*))GetProcAddress(hookTool, "writeVarToAddressP");
+        getClassFunctionAddress=(void* (*)(DWORD*,int))GetProcAddress(hookTool, "getClassFunctionAddress");
+        getThisPtrFromECX=(UINT (*)())GetProcAddress(hookTool, "getThisPtrFromECX");
+        moveVarToECX=(void (*)(UINT))GetProcAddress(hookTool, "moveVarToECX");
+        if(
+            hookJMP==NULL||hookVTable==NULL||writeVarToAddress==NULL||writeVarToAddressP==NULL||getClassFunctionAddress==NULL||getThisPtrFromECX==NULL||moveVarToECX==NULL
+            ){
+            MessageBoxA(0, "can not  load functions in hook tools!", "test", MB_OK | MB_ICONINFORMATION);
+        }
+
         //load minHook, we use its hookTrampoline function, I haven't imp my own version
-        init = (int (*)())GetProcAddress(hookToolKit, "MH_Initialize");
+        init = (int (*)())GetProcAddress(minHook, "MH_Initialize");
         if(init==NULL){
             MessageBoxA(0, "can not  load MH_Initialize!", "test", MB_OK | MB_ICONINFORMATION);
         }
-        createHook = (int (*)(LPVOID,LPVOID,LPVOID*))GetProcAddress(hookToolKit, "MH_CreateHook");
+        createHook = (int (*)(LPVOID,LPVOID,LPVOID*))GetProcAddress(minHook, "MH_CreateHook");
         if(createHook==NULL){
             MessageBoxA(0, "can not  load MH_CreateHook!", "test", MB_OK | MB_ICONINFORMATION);
         }
-        enableHook = (int (*)(LPVOID))GetProcAddress(hookToolKit, "MH_EnableHook");
+        enableHook = (int (*)(LPVOID))GetProcAddress(minHook, "MH_EnableHook");
         if(enableHook==NULL){
             MessageBoxA(0, "can not  load MH_EnableHook!", "test", MB_OK | MB_ICONINFORMATION);
         }
@@ -99,7 +128,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 
 
-        FreeLibrary(hookToolKit);
+        FreeLibrary(minHook);
     }
     return TRUE; // succesful
 }
@@ -151,7 +180,7 @@ int64_t createShader(UINT* pShader,UINT* pDeclaration){
     //this->m_pD3DDevice
     device=(IDirect3DDevice8*)*(DWORD*)(thisPtr+0x90);
     //MessageBoxA(0, std::to_string((int)device).c_str(), "test", MB_OK | MB_ICONINFORMATION);
-
+    
 
     //this is equal to upon
     /*
@@ -229,7 +258,7 @@ UINT setPixelShader(int id){
     //original function
     UINT value=getShaderHandle(id);
 
-
+    //MessageBoxA(0, "set pixel shader!", "test", MB_OK | MB_ICONINFORMATION);
     //get function for set texture
     //this is NOT correct
     /*
