@@ -1,12 +1,14 @@
 #include "main.h"
 
-//temp dx version control
-int dxVersion = 9;
+//dx version control
+int dxVersion;
+
 //hook tool
 void (*hookJMP)(void*,void*);
 void* (*hookVTable)(void**,size_t,void*);
 void (*writeVarToAddress)(UINT,UINT,void*);
 void (*writeVarToAddressP)(void*,UINT,void*);
+void (*writeNopsToAddress)(UINT,UINT);
 void* (*getClassFunctionAddress)(DWORD*,int);
 UINT (*getThisPtrFromECX)();
 void (*moveVarToECX)(UINT);
@@ -63,6 +65,7 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
         hookVTable = (void* (*)(void**,size_t,void*))GetProcAddress (hookTool,"hookVTable");
         writeVarToAddress = (void (*)(UINT,UINT,void*))GetProcAddress (hookTool,"writeVarToAddress");
         writeVarToAddressP = (void (*)(void*,UINT,void*))GetProcAddress (hookTool,"writeVarToAddressP");
+        writeNopsToAddress = (void (*)(UINT,UINT))GetProcAddress (hookTool,"writeNopsToAddress");
         getClassFunctionAddress = (void* (*)(DWORD*,int))GetProcAddress (hookTool,"getClassFunctionAddress");
         getThisPtrFromECX = (UINT (*)())GetProcAddress (hookTool,"getThisPtrFromECX");
         moveVarToECX = (void (*)(UINT))GetProcAddress (hookTool,"moveVarToECX");
@@ -87,6 +90,25 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
         }
 
         init ();
+
+        //read dx version
+        int argNum;
+        wchar_t** args;
+        args = CommandLineToArgvW (GetCommandLineW (),&argNum);
+        std::vector<std::wstring> argsV;
+        if(args) {
+            argsV.assign (args,args + argNum);
+            LocalFree (args);
+        }
+        int index = (argsV.size () > 1) ? 1 : 0;
+        //MessageBoxW (0,argsV[index].c_str(),L"test",MB_OK | MB_ICONINFORMATION);
+        if(argsV[index] == L"/d3d9" || argsV[index] == L"-d3d9") {
+            //MessageBoxW (0,L"enable d3d9",L"test",MB_OK | MB_ICONINFORMATION);
+            dxVersion = 9;
+        }
+        else {
+            dxVersion = 8;
+        }
 
         if(dxVersion == 8) {
             //======compile shader
@@ -127,7 +149,25 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
 
             writeVarToAddress (0x5A9E67D1,sizeof (jmpInstruction),(void*)jmpInstruction);
         }
-        else if(dxVersion == 9){
+        else if(dxVersion == 9) {
+            //this is basically same as fo's dx9 conversion, just add pixel shader
+            //writeNopsToAddress (0x51AA31,0xAB);
+
+
+            //writeNopsToAddress (0x5AA019D0,0xF);
+            //void(*FODX9)()=(void(*)())0x5A9F254C;
+
+            //FODX9();
+
+
+            // char d3dtest_checkedArguments = 1;
+            // writeVarToAddressP ((void*)0x5AA102E0,sizeof (d3dtest_checkedArguments),(void*)d3dtest_checkedArguments);
+            // char d3dtest_isD3D9 = 1;
+            // writeVarToAddressP ((void*)0x5AA102E4,sizeof (d3dtest_isD3D9),(void*)d3dtest_isD3D9);
+
+            //all of commented code upon is not worked or won't be done for now
+
+
 
         }
 
@@ -136,9 +176,11 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
 
 
         FreeLibrary (minHook);
+        FreeLibrary (hookTool);
     }
     return TRUE; // succesful
 }
+
 
 int* compilePixelShader (const int* mesh) {
     //MessageBoxA(0, "compilePixelShader", "test", MB_OK | MB_ICONINFORMATION);

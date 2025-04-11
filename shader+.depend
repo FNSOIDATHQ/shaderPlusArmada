@@ -106,13 +106,14 @@
 1037100010 f:\new\dx9.0csdk\include\d3dx8effect.h
 	"d3dx8.h"
 
-1744189711 source:f:\resources\code\nebulapatch\shaderplus\main.cpp
+1744368083 source:f:\resources\code\nebulapatch\shaderplus\main.cpp
 	"main.h"
 
-1744189723 f:\resources\code\nebulapatch\shaderplus\main.h
+1744368271 f:\resources\code\nebulapatch\shaderplus\main.h
+	<string>
+	<vector>
 	<d3d8.h>
 	<d3dx8.h>
-	"..\hookTools\hookTool.h"
 
 1038931372 f:\resources\tools\directx\dx9.0csdk\include\d3d8.h
 	<stdlib.h>

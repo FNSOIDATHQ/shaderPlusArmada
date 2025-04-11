@@ -3,6 +3,7 @@
 
 //cpp std library
 #include <string>
+#include <vector>
 
 //DX library
 //from dx9.0c sdk
