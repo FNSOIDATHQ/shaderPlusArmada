@@ -43,6 +43,16 @@ DWORD PSHandle;
 BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
     //only hook when dll is attaching
     if(fdwReason == DLL_PROCESS_ATTACH) {
+        // return activate();
+    }
+    else{
+        //do nothing
+    }
+
+    return TRUE; // succesful
+}
+
+bool activate(){
         // MessageBoxA(0, "load shader+", "test", MB_OK | MB_ICONINFORMATION);
 
         int (*init)();
@@ -53,11 +63,11 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
         HINSTANCE hookTool = LoadLibrary (".\\dll\\hookTools.dll");
         if(minHook == NULL) {
             MessageBoxA (0,"can not load minHook!","test",MB_OK | MB_ICONINFORMATION);
-            return TRUE;
+            return FALSE;
         }
         else if(hookTool == NULL) {
             MessageBoxA (0,"can not load hookTools!","test",MB_OK | MB_ICONINFORMATION);
-            return TRUE;
+            return FALSE;
         }
 
         //load hook tools
@@ -73,20 +83,24 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
             hookJMP == NULL || hookVTable == NULL || writeVarToAddress == NULL || writeVarToAddressP == NULL || getClassFunctionAddress == NULL || getThisPtrFromECX == NULL || moveVarToECX == NULL
             ) {
             MessageBoxA (0,"can not  load functions in hook tools!","test",MB_OK | MB_ICONINFORMATION);
+            return FALSE;
         }
 
         //load minHook, we use its hookTrampoline function, I haven't imp my own version
         init = (int (*)())GetProcAddress (minHook,"MH_Initialize");
         if(init == NULL) {
             MessageBoxA (0,"can not  load MH_Initialize!","test",MB_OK | MB_ICONINFORMATION);
+            return FALSE;
         }
         createHook = (int (*)(LPVOID,LPVOID,LPVOID*))GetProcAddress (minHook,"MH_CreateHook");
         if(createHook == NULL) {
             MessageBoxA (0,"can not  load MH_CreateHook!","test",MB_OK | MB_ICONINFORMATION);
+            return FALSE;
         }
         enableHook = (int (*)(LPVOID))GetProcAddress (minHook,"MH_EnableHook");
         if(enableHook == NULL) {
             MessageBoxA (0,"can not  load MH_EnableHook!","test",MB_OK | MB_ICONINFORMATION);
+            return FALSE;
         }
 
         init ();
@@ -176,9 +190,10 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
 
 
         FreeLibrary (minHook);
-        FreeLibrary (hookTool);
-    }
-    return TRUE; // succesful
+        //you shouldn't free it!
+        //FreeLibrary (hookTool);
+
+        return TRUE;
 }
 
 

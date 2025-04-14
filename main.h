@@ -39,6 +39,7 @@ struct Matrix{
     Vector3 right,up,front,position;
 };
 
+DLL_EXPORT bool activate();
 DLL_EXPORT int dot3MeshVBRender(int, int, int, DWORD **);
 DLL_EXPORT void MVBcreateShader();
 DLL_EXPORT int* compilePixelShader(const int*);

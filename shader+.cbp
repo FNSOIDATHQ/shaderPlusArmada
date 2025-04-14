@@ -37,7 +37,7 @@
 					<Add option="/Od" />
 					<Add option="/EHsc" />
 					<Add option="/DBUILD_DLL" />
-					<Add directory="../../../New/DX9.0cSDK/Include" />
+					<Add directory="../../../TOOLS/DirectX/DX9.0cSDK/Include" />
 				</Compiler>
 				<Linker>
 					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/kernel32.Lib" />
@@ -48,12 +48,12 @@
 					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/AdvAPI32.Lib" />
 					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/ComDlg32.Lib" />
 					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/shell32.lib" />
-					<Add library="../../../New/DX9.0cSDK/Lib/d3d8.lib" />
-					<Add library="../../../New/DX9.0cSDK/Lib/d3dx8.lib" />
-					<Add library="../../../New/DX9.0cSDK/Lib/d3dxof.lib" />
-					<Add library="../../../New/DX9.0cSDK/Lib/dxguid.lib" />
-					<Add library="../../../New/DX9.0cSDK/Lib/DxErr8.lib" />
-					<Add directory="../../../New/DX9.0cSDK/Lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/d3d8.lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/d3dx8.lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/d3dxof.lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/dxguid.lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/DxErr8.lib" />
+					<Add directory="../../../TOOLS/DirectX/DX9.0cSDK/Lib" />
 				</Linker>
 				<MakeCommands>
 					<Build command="" />
