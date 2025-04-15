@@ -1,11 +1,5 @@
 #include "dx8plus.h"
 
-//cpp std library
-#include <string>
-#include <vector>
-
-#include "loadHookTool.h"
-
 //DX library
 //from dx9.0c sdk
 #include <d3d8.h>
@@ -300,7 +294,6 @@ __declspec(naked) void disablePixelShaderInAlpha () {
     }
 
 }
-
 
 //this function seems won't call in real gaming
 void MVBcreateShader () {

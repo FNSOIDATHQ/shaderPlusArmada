@@ -2,17 +2,6 @@
 #define __LOADHOOKTOOL_H__
 
 #include "utilities.h"
-//hook library
-//use this when coding, switch to dynamic load when compiling
-//#include "..\hookTools\hookTool.h"
-
-#ifdef BUILD_DLL
-#define DLL_EXPORT __declspec(dllexport)
-#else
-#define DLL_EXPORT __declspec(dllimport)
-#endif
-
-#define DLL_IMPORT __declspec(dllimport)
 
 //hook tool
 extern void (*hookJMP)(void*,void*);
@@ -36,4 +25,3 @@ extern "C"
 #endif
 
 #endif // __LOADHOOKTOOL_H__
-

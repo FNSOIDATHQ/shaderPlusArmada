@@ -1,11 +1,5 @@
 #include "dx9plus.h"
 
-//cpp std library
-#include <string>
-#include <vector>
-
-#include "loadHookTool.h"
-
 //DX library
 //from dx9.0c sdk
 #include <d3d9.h>

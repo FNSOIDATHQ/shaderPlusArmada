@@ -27,8 +27,10 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
 bool activate () {
     // MessageBoxA(0, "load shader+", "test", MB_OK | MB_ICONINFORMATION);
 
-    loadTools();
+    //load hook tools
+    loadTools ();
 
+    //load minHook
     int (*init)();
     int (*createHook)(LPVOID,LPVOID,LPVOID*);
     int (*enableHook)(LPVOID);
@@ -84,6 +86,7 @@ bool activate () {
         dxVersion = 8;
     }
 
+    //hook code
     if(dxVersion == 8) {
         //======compile shader
         char newVertexShaderPath[] = "shaders\\dx8\\vertex\\vs.nvv";
@@ -140,14 +143,7 @@ bool activate () {
         // writeVarToAddressP ((void*)0x5AA102E4,sizeof (d3dtest_isD3D9),(void*)d3dtest_isD3D9);
 
         //all of commented code upon is not worked or won't be done for now
-
-
-
     }
-
-
-
-
 
     FreeLibrary (minHook);
     //you shouldn't free it!

@@ -1,13 +1,13 @@
 #include "loadHookTool.h"
 
- void (*hookJMP)(void*,void*);
- void* (*hookVTable)(void**,size_t,void*);
- void (*writeVarToAddress)(UINT,UINT,void*);
- void (*writeVarToAddressP)(void*,UINT,void*);
- void (*writeNopsToAddress)(UINT,UINT);
- void* (*getClassFunctionAddress)(DWORD*,int);
- UINT (*getThisPtrFromECX)();
- void (*moveVarToECX)(UINT);
+void (*hookJMP)(void*,void*);
+void* (*hookVTable)(void**,size_t,void*);
+void (*writeVarToAddress)(UINT,UINT,void*);
+void (*writeVarToAddressP)(void*,UINT,void*);
+void (*writeNopsToAddress)(UINT,UINT);
+void* (*getClassFunctionAddress)(DWORD*,int);
+UINT (*getThisPtrFromECX)();
+void (*moveVarToECX)(UINT);
 
 bool loadTools () {
     HINSTANCE hookTool = LoadLibrary (".\\dll\\hookTools.dll");
