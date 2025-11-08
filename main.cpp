@@ -143,6 +143,8 @@ bool activate () {
         // writeVarToAddressP ((void*)0x5AA102E4,sizeof (d3dtest_isD3D9),(void*)d3dtest_isD3D9);
 
         //all of commented code upon is not worked or won't be done for now
+
+        hookJMP((void*)0x5A9F1CD4,dot3MeshVBRender9);
     }
 
     FreeLibrary (minHook);

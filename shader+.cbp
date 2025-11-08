@@ -36,10 +36,13 @@
 					<Add option="/Gz" />
 					<Add option="/Od" />
 					<Add option="/EHsc" />
+					<Add option="/FS" />
+					<Add option="/DEBUG:FASTLINK" />
 					<Add option="/DBUILD_DLL" />
 					<Add directory="../../../TOOLS/DirectX/DX9.0cSDK/Include" />
 				</Compiler>
 				<Linker>
+					<Add option="/DEF:dll.def" />
 					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/kernel32.Lib" />
 					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/User32.Lib" />
 					<Add library="C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x86/WinMM.Lib" />
@@ -53,6 +56,9 @@
 					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/d3dxof.lib" />
 					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/dxguid.lib" />
 					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/DxErr8.lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/d3d9.lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/d3dx9.lib" />
+					<Add library="../../../TOOLS/DirectX/DX9.0cSDK/Lib/DxErr9.lib" />
 					<Add directory="../../../TOOLS/DirectX/DX9.0cSDK/Lib" />
 				</Linker>
 				<MakeCommands>
@@ -65,8 +71,15 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="dx8plus.cpp" />
+		<Unit filename="dx8plus.h" />
+		<Unit filename="dx9plus.cpp" />
+		<Unit filename="dx9plus.h" />
+		<Unit filename="loadHookTool.cpp" />
+		<Unit filename="loadHookTool.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="main.h" />
+		<Unit filename="utilities.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>
