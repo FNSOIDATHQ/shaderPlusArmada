@@ -24,7 +24,7 @@ LPVOID psCompiled;
 DWORD psHandle;
 
 
-int* compilePixelShader (const int* mesh) {
+int* __stdcall compilePixelShader (const int* mesh) {
     //MessageBoxA(0, "compilePixelShader", "test", MB_OK | MB_ICONINFORMATION);
 
     //original function:ST3D_CreateDot3MeshVB(ST3D_Mesh const *)
@@ -51,7 +51,7 @@ int* compilePixelShader (const int* mesh) {
     return meshOut;
 }
 
-int64_t createShader (UINT* pShader,UINT* pDeclaration) {
+int64_t __stdcall createShader (UINT* pShader,UINT* pDeclaration) {
     //MessageBoxA(0, "createShader", "test", MB_OK | MB_ICONINFORMATION);
 
     UINT thisPtr;
@@ -139,7 +139,7 @@ int64_t createShader (UINT* pShader,UINT* pDeclaration) {
     return (int64_t)pShader;
 }
 
-UINT setPixelShader (int id) {
+UINT __stdcall setPixelShader (int id) {
     UINT thisPtr;
     __asm {
         call getThisPtrFromECX
@@ -220,7 +220,7 @@ UINT setPixelShader (int id) {
 
 //call every frame
 //TODO: rework drawLight to support real per-pixel multi-light source rendering
-int drawLight (int a1,int a2,int a3,DWORD** a4) {
+int __stdcall drawLight (int a1,int a2,int a3,DWORD** a4) {
 
     UINT thisPtr;
     __asm {
@@ -231,7 +231,7 @@ int drawLight (int a1,int a2,int a3,DWORD** a4) {
 }
 
 //call every frame
-int dot3MeshVBRender (int a1,int a2,int a3,DWORD** a4) {
+int __stdcall dot3MeshVBRender (int a1,int a2,int a3,DWORD** a4) {
 
     UINT thisPtr;
     __asm {
@@ -296,7 +296,7 @@ __declspec(naked) void disablePixelShaderInAlpha () {
 }
 
 //this function seems won't call in real gaming
-void MVBcreateShader () {
+void __stdcall MVBcreateShader () {
     MessageBoxA (0,"createShader","test",MB_OK | MB_ICONINFORMATION);
     return;
 }

@@ -15,6 +15,7 @@
 
 //cpp std library+windows sdk
 #include <string>
+#include <list>
 #include <vector>
 #include <stdint.h>
 #include <windows.h>

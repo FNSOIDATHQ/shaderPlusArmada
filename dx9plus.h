@@ -8,7 +8,7 @@ extern "C"
 {
 #endif
 
-    DLL_EXPORT int __fastcall dot3MeshVBRender9 (DWORD**,int,float*);
+    DLL_EXPORT int __fastcall dot3MeshVBRender9 (int,int,int,float*,int,DWORD**);
 
 #ifdef __cplusplus
 }

@@ -106,10 +106,10 @@
 1037100010 f:\new\dx9.0csdk\include\d3dx8effect.h
 	"d3dx8.h"
 
-1744721611 source:f:\resources\code\nebulapatch\shaderplus\main.cpp
+1762633739 source:f:\resources\code\nebulapatch\shaderplus\main.cpp
 	"main.h"
 
-1744721380 f:\resources\code\nebulapatch\shaderplus\main.h
+1762572530 f:\resources\code\nebulapatch\shaderplus\main.h
 	"dx8plus.h"
 	"dx9plus.h"
 
@@ -170,26 +170,27 @@
 1744721554 f:\resources\code\nebulapatch\shaderplus\loadhooktool.h
 	"utilities.h"
 
-1744721575 source:f:\resources\code\nebulapatch\shaderplus\dx8plus.cpp
+1762572573 source:f:\resources\code\nebulapatch\shaderplus\dx8plus.cpp
 	"dx8plus.h"
 	<d3d8.h>
 	<d3dx8.h>
 
-1744721412 f:\resources\code\nebulapatch\shaderplus\dx8plus.h
+1762572587 f:\resources\code\nebulapatch\shaderplus\dx8plus.h
 	"loadHookTool.h"
 
-1762562901 f:\resources\code\nebulapatch\shaderplus\utilities.h
+1762599693 f:\resources\code\nebulapatch\shaderplus\utilities.h
 	<string>
+	<list>
 	<vector>
 	<stdint.h>
 	<windows.h>
 
-1762562969 source:f:\resources\code\nebulapatch\shaderplus\dx9plus.cpp
+1762633563 source:f:\resources\code\nebulapatch\shaderplus\dx9plus.cpp
 	"dx9plus.h"
 	<d3d9.h>
 	<d3dx9.h>
 
-1762562545 f:\resources\code\nebulapatch\shaderplus\dx9plus.h
+1762574990 f:\resources\code\nebulapatch\shaderplus\dx9plus.h
 	"loadHookTool.h"
 
 1038931372 f:\resources\tools\directx\dx9.0csdk\include\d3d9.h

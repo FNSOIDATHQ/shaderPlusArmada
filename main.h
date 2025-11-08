@@ -10,7 +10,7 @@ extern "C"
 {
 #endif
 
-    DLL_EXPORT bool activate ();
+    DLL_EXPORT bool __stdcall activate ();
 
 #ifdef __cplusplus
 }

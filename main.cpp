@@ -24,7 +24,7 @@ BOOL APIENTRY DllMain (HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved) {
     return TRUE; // succesful
 }
 
-bool activate () {
+bool __stdcall activate () {
     // MessageBoxA(0, "load shader+", "test", MB_OK | MB_ICONINFORMATION);
 
     //load hook tools
@@ -79,7 +79,7 @@ bool activate () {
     int index = (argsV.size () > 1) ? 1 : 0;
     //MessageBoxW (0,argsV[index].c_str(),L"test",MB_OK | MB_ICONINFORMATION);
     if(argsV[index] == L"/d3d9" || argsV[index] == L"-d3d9") {
-        //MessageBoxW (0,L"enable d3d9",L"test",MB_OK | MB_ICONINFORMATION);
+        MessageBoxW (0,L"Now in DX9 Mode",L"Notice",MB_OK | MB_ICONINFORMATION);
         dxVersion = 9;
     }
     else {

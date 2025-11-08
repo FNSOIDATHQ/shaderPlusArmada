@@ -11,3 +11,4 @@ EXPORTS
    setPixelShader
    drawLight
    disablePixelShaderInAlpha
+   dot3MeshVBRender9
