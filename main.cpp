@@ -148,9 +148,9 @@ bool __stdcall activate () {
         // createHook ((LPVOID)0x626E50,(LPVOID)compileHLSLShader9,reinterpret_cast<LPVOID*>(&CD3MVB));
         // enableHook ((LPVOID)0x626E50);
 
-        hookVTable ((void**)0x6BC6AC,18,(void*)createShader9);
+        // hookVTable ((void**)0x6BC6AC,18,(void*)createShader9);
 
-        hookJMP((void*)0x5A9F1CD4,dot3MeshVBRender9);
+        hookJMP((void*)0x5A9F1CD4,dot3MeshVBRender9Programmable);
     }
 
     FreeLibrary (minHook);

@@ -26,6 +26,8 @@ void (__thiscall* getShaderHandle9)(ST3D_GraphicsEngine* Storm3D,int id) = (decl
 IDirect3DVertexBuffer9* (__thiscall* getVertexBufferObject)(ST3D_GraphicsEngine* Storm3D,int id) = (decltype(getVertexBufferObject))0x62C1B0;
 IDirect3DIndexBuffer9* (__thiscall* getIndexBufferObject)(ST3D_GraphicsEngine* Storm3D,int id) = (decltype(getIndexBufferObject))0x62C210;
 
+int (__thiscall* TexDemandLoad)(ST3D_Texture* thisPtr,int device_index) = (decltype(TexDemandLoad))0x642610;
+
 // Per-light rendering vanilla FO
 // unsigned char (__thiscall* ST3D_Dot3_MeshVB_DrawLight_New_0)(
 //     void* self,
@@ -53,6 +55,32 @@ static inline Vector3 vec_norm (const Vector3& v) {
     return Vector3{ 0.f,0.f,0.f };
 }
 
+IDirect3DBaseTexture9* GetD3DTexture9FromStorm3DTexture (ST3D_GraphicsEngine* Storm3D,ST3D_Texture* tex) {
+    if(!tex)
+        return nullptr;
+
+    int idx = Storm3D->m_current_device_index;
+
+    if(TexDemandLoad (tex,idx))
+        return nullptr;
+
+    ST3D_DeviceTexture* devTex = tex->m_device_texture[idx];
+    if(!devTex)
+        return nullptr;
+
+    void* d3dTex = *((void**)devTex + 1);
+    if(!d3dTex)
+        return nullptr;
+
+    // DX8 -> DX9
+    IDirect3DBaseTexture9* baseTex = nullptr;
+    ((IUnknown*)d3dTex)->QueryInterface (IID_IDirect3DBaseTexture9,
+        (void**)&baseTex);
+
+    return baseTex;
+}
+
+
 //Shader related
 IDirect3DDevice9* D3DDevice9;
 LPVOID vsCompiled;
@@ -62,11 +90,10 @@ IDirect3DVertexShader9* vertexShader;
 
 ID3DXEffect* fxShader = nullptr;
 
-//call every frame
 
-//in dx8 version, vgIndex will later be used to carry IDirect3DDevice8
-//we will not do same thing here
-int __fastcall dot3MeshVBRender9 (
+//original armada set shader constant in PreRender function
+//vertex shader + pixel shader
+int __fastcall dot3MeshVBRender9Programmable (
     int padding1,
     int padding2,
     int vgIndex,           // [ebp+ 8]
@@ -141,7 +168,138 @@ int __fastcall dot3MeshVBRender9 (
 
         fxShader->SetTechnique ("pbrLite");
 
-        D3DXHANDLE tech = fxShader->GetTechniqueByName ("pbrLite");
+
+        D3DVERTEXELEMENT9 a2VertexElements[] =
+        {
+            // stream offset   type                  method        usage      usageIndex
+            {0,  0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION,  0},
+            {0, 12, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL,    0},
+            {0, 24, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,   0},
+            {0, 32, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TANGENT,  0},
+            {0, 44, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BINORMAL,  0},
+            {0, 56, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,  1},
+            D3DDECL_END () // {0xFF, 0, D3DDECLTYPE_UNUSED, 0, 0, 0}
+        };
+        D3DDevice9->CreateVertexDeclaration (a2VertexElements,&vertexDeclaration);
+    }
+
+    //set inputs
+    ST3D_Texture* diffuse = (ST3D_Texture*)(*textures)[0];
+    IDirect3DBaseTexture9* diffuseTex9 = GetD3DTexture9FromStorm3DTexture (Storm3D,diffuse);
+    fxShader->SetTexture ("gDiffuse",diffuseTex9);
+
+    D3DXMATRIX world,view,proj;
+    D3DDevice9->GetTransform (D3DTS_WORLD,&world);
+    D3DDevice9->GetTransform (D3DTS_VIEW,&view);
+    D3DDevice9->GetTransform (D3DTS_PROJECTION,&proj);
+
+    fxShader->SetMatrix ("gWorld",&world);
+    fxShader->SetMatrix ("gView",&view);
+    fxShader->SetMatrix ("gProj",&proj);
+    
+    IDirect3DVertexBuffer9* vbObj = getVertexBufferObject (Storm3D,vgi->vertex_buffer_id);
+    IDirect3DIndexBuffer9* ibObj = getIndexBufferObject (Storm3D,vgi->index_buffer_id);
+
+
+    //Rendering
+    UINT passes;
+    fxShader->Begin (&passes,0);
+    for(UINT p = 0; p < passes; ++p) {
+        fxShader->BeginPass (p);
+
+        D3DDevice9->SetStreamSource (0,vbObj,0,68);
+        D3DDevice9->SetVertexDeclaration (vertexDeclaration);
+        D3DDevice9->SetIndices (ibObj);
+        D3DDevice9->DrawIndexedPrimitive (D3DPT_TRIANGLELIST,0,0,vgi->num_vertices,0,numFaces);
+
+        fxShader->EndPass ();
+    }
+    fxShader->End ();
+    // return sm_faces_remaining;
+}
+
+
+//call every frame
+
+//This is old pipeline, fixed rendering pipeline + simple vertex shader
+//in dx8 version, vgIndex will later be used to carry IDirect3DDevice8
+//we will not do same thing here
+int __fastcall dot3MeshVBRender9 (
+    int padding1,
+    int padding2,
+    int vgIndex,           // [ebp+ 8]
+    float* lightingMaterial,                // [ebp+ C]
+    int padding3,
+    DWORD** textures)    // [ebp+14]
+{
+    ST3D_Dot3_MeshVB* self;
+    __asm {
+        call getThisPtrFromECX
+        mov self,eax
+    }
+
+    // i dont think this will actually do anything
+    // if(*gRenderer == 0) {
+    //     *gRenderer = Renderer_create (dword_5A9EFDA0,1);
+    // }
+
+    // Select correct VertexGroup_Info
+    VertexGroup_Info* vgi = &self->m_vg_info[vgIndex];
+    int numFaces = vgi->num_triangles;
+
+    // Apply face limiting (Storm3D feature)
+    int* sm_faces_remaining_ptr = (int*)0x72C3F4;
+    int sm_faces_remaining = *sm_faces_remaining_ptr;
+    if(sm_faces_remaining != -1) {
+        if(sm_faces_remaining < numFaces) {
+            numFaces = *sm_faces_remaining_ptr;
+        }
+
+        *sm_faces_remaining_ptr -= numFaces;
+
+        //i am not pretty sure, but guess original code is wrong
+        //sm_faces_remaining = *(_DWORD *)off_5AA12624
+        sm_faces_remaining = *sm_faces_remaining_ptr;
+    }
+
+    //skip if we do not have poly budget
+    if(numFaces <= 0) {
+        return sm_faces_remaining;
+    }
+
+    // Direct3D device from engine
+    ST3D_GraphicsEngine* Storm3D = *(ST3D_GraphicsEngine**)0x7AD508;
+    int shaderID = *(int*)0x72B52C;
+    void* ST3dDevice = Storm3D->m_device[Storm3D->m_current_device_index];
+    // MessageBoxA(0, "before get vtable functions", "Checker", MB_OK | MB_ICONINFORMATION);
+
+    //get vtable functions
+    getPlatformSpecific = (int (__thiscall*)(void*,int,int*))(getClassFunctionAddress ((DWORD*)ST3dDevice,48));
+    setTexture = (void (__thiscall*)(void*,DWORD,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,25));
+    setBlendingMode = (void (__thiscall*)(void*,int,int,int,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,36));
+    setSpecularEnable = (void (__thiscall*)(void*,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,40));
+    setDiffuseEnable = (void (__thiscall*)(void*,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,41));
+
+
+    D3DDevice9 = nullptr;
+    getPlatformSpecific (ST3dDevice,3,(int*)&D3DDevice9);
+    // MessageBoxA(0, std::to_string((int)D3DDevice9).c_str(), "D3DDevice9 Value", MB_OK | MB_ICONINFORMATION);
+
+    //compile shaders from fx file
+    if(fxShader == nullptr) {
+        // MessageBoxA (nullptr,"Start Compile FX","Notice",MB_OK | MB_ICONINFORMATION);
+        LPD3DXBUFFER errorMsgs = nullptr;
+        LPCSTR FXPath = "shaders\\dx9\\dot3.fx";
+        HRESULT result = D3DXCreateEffectFromFileA (D3DDevice9,FXPath,nullptr,nullptr,0,nullptr,&fxShader,&errorMsgs);
+
+        if(result != 0) {
+            const char* msg = (const char*)errorMsgs->GetBufferPointer ();
+            MessageBoxA (nullptr,msg,"FX Shader Compile Error",MB_OK | MB_ICONERROR);
+        }
+
+        fxShader->SetTechnique ("dot3");
+
+        D3DXHANDLE tech = fxShader->GetTechniqueByName ("dot3");
         D3DXHANDLE pass = fxShader->GetPass (tech,0);
 
         D3DXPASS_DESC desc;
@@ -456,7 +614,7 @@ int* __stdcall compileHLSLShader9 (const int* mesh) {
     LPD3DXBUFFER errorMsgs = nullptr;
     LPD3DXCONSTANTTABLE constantTable;
 
-    HRESULT result = D3DXCompileShaderFromFile (
+    HRESULT result = D3DXCompileShaderFromFileA (
         vertexShaderPath,
         nullptr,                 // macro definitions
         nullptr,                 // include handler
