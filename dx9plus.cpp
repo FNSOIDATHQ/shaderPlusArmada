@@ -5,6 +5,7 @@
 // =========================================================
 int* gRenderer = (int*)0x5AA126BC;         // Delphi Renderer instance pointer
 DWORD* dword_5A9EFDA0 = (DWORD*)0x5A9EFDA0;  // param passed to Renderer_create
+D3DVERTEXELEMENT9* vertexElementsFO = *(D3DVERTEXELEMENT9**)0x5AA49280;
 
 int (__stdcall* Renderer_create)(DWORD* param,int enable)
 = (decltype(Renderer_create))0x5A9EFDBC;
@@ -52,6 +53,14 @@ static inline Vector3 vec_norm (const Vector3& v) {
     return Vector3{ 0.f,0.f,0.f };
 }
 
+//Shader related
+IDirect3DDevice9* D3DDevice9;
+LPVOID vsCompiled;
+const DWORD* vsCompiledFX;
+IDirect3DVertexDeclaration9* vertexDeclaration;
+IDirect3DVertexShader9* vertexShader;
+
+ID3DXEffect* fxShader = nullptr;
 
 //call every frame
 
@@ -114,9 +123,36 @@ int __fastcall dot3MeshVBRender9 (
     setDiffuseEnable = (void (__thiscall*)(void*,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,41));
 
 
-    IDirect3DDevice9* D3DDevice9 = nullptr;
+    D3DDevice9 = nullptr;
     getPlatformSpecific (ST3dDevice,3,(int*)&D3DDevice9);
     // MessageBoxA(0, std::to_string((int)D3DDevice9).c_str(), "D3DDevice9 Value", MB_OK | MB_ICONINFORMATION);
+
+    //compile shaders from fx file
+    if(fxShader == nullptr) {
+        // MessageBoxA (nullptr,"Start Compile FX","Notice",MB_OK | MB_ICONINFORMATION);
+        LPD3DXBUFFER errorMsgs = nullptr;
+        LPCSTR FXPath = "shaders\\dx9\\pbrLite.fx";
+        HRESULT result = D3DXCreateEffectFromFileA (D3DDevice9,FXPath,nullptr,nullptr,0,nullptr,&fxShader,&errorMsgs);
+
+        if(result != 0) {
+            const char* msg = (const char*)errorMsgs->GetBufferPointer ();
+            MessageBoxA (nullptr,msg,"FX Shader Compile Error",MB_OK | MB_ICONERROR);
+        }
+
+        fxShader->SetTechnique ("pbrLite");
+
+        D3DXHANDLE tech = fxShader->GetTechniqueByName ("pbrLite");
+        D3DXHANDLE pass = fxShader->GetPass (tech,0);
+
+        D3DXPASS_DESC desc;
+        fxShader->GetPassDesc (pass,&desc);
+
+        vsCompiledFX = desc.pVertexShaderFunction;
+
+        // std::string fxChecker = "getCompiledFX="+*desc.pVertexShaderFunction;
+        // MessageBoxA (nullptr,fxChecker.c_str(),"Notice",MB_OK | MB_ICONINFORMATION);
+    }
+
 
     //
     // Stage 1: light aclculation(dir+color) with normal map
@@ -154,10 +190,8 @@ int __fastcall dot3MeshVBRender9 (
     D3DDevice9->SetIndices (ibObj);
 
     //DX9 has new shader logic, so we can not just use shader handle to set veretx shader
-    int* ST3D_Dot3_MeshVB_VertexDeclaration = (int*)0x5AA4927C;
-    D3DDevice9->SetVertexDeclaration ((IDirect3DVertexDeclaration9*)*ST3D_Dot3_MeshVB_VertexDeclaration);
-    int* ST3D_Dot3_MeshVB_VertexShader = (int*)0x5AA49278;
-    D3DDevice9->SetVertexShader ((IDirect3DVertexShader9*)*ST3D_Dot3_MeshVB_VertexShader);
+    D3DDevice9->SetVertexDeclaration (vertexDeclaration);
+    D3DDevice9->SetVertexShader (vertexShader);
 
     // MessageBoxA(0, "before Stage 1.1", "Checker", MB_OK | MB_ICONINFORMATION);
     //
@@ -379,4 +413,69 @@ void dot3MeshVBDrawLight9 (
 
     // 3. draw light final
     pD3DDevice9->DrawIndexedPrimitive (D3DPT_TRIANGLELIST,0,0,info->num_vertices,0,numFaces);
+}
+
+
+int64_t __stdcall createShader9 (DWORD* pShader,UINT* pDeclaration) {
+    // MessageBoxA(0, "createShader", "test", MB_OK | MB_ICONINFORMATION);
+
+    UINT thisPtr;
+    __asm {
+        call getThisPtrFromECX
+        mov thisPtr,eax
+    }
+
+    D3DDevice9->CreateVertexDeclaration (vertexElementsFO,&vertexDeclaration);
+    HRESULT VSresult = D3DDevice9->CreateVertexShader ((DWORD*)vsCompiledFX,&vertexShader);
+    // this will choose to use old dot3_directional9.nvv
+    // HRESULT VSresult = D3DDevice9->CreateVertexShader ((DWORD*)pShader,&vertexShader);
+
+    // HRESULT PSresult = D3DDevice9->CreatePixelShader ((DWORD*)psCompiled,&psHandle);
+
+    if(VSresult != 0) {
+        MessageBoxA (0,"error create vertex shader!","test",MB_OK | MB_ICONINFORMATION);
+    }
+    // if(PSresult != 0) {
+    //     MessageBoxA (0,"error create pixel shader!","test",MB_OK | MB_ICONINFORMATION);
+    // }
+    return (int64_t)pShader;
+}
+
+
+//no longer use because D3DXCompileShaderFromFile do not support vs3.0/ps3.0
+int* __stdcall compileHLSLShader9 (const int* mesh) {
+
+    //original function:ST3D_CreateDot3MeshVB(ST3D_Mesh const *)
+    int* meshOut = CD3MVB (mesh);
+
+    //compile shader from file
+    LPCSTR vertexShaderPath = "shaders\\dx9\\vs.hlsl";
+    DWORD flag = 0;
+
+    LPD3DXBUFFER compiledShader = nullptr;
+    LPD3DXBUFFER errorMsgs = nullptr;
+    LPD3DXCONSTANTTABLE constantTable;
+
+    HRESULT result = D3DXCompileShaderFromFile (
+        vertexShaderPath,
+        nullptr,                 // macro definitions
+        nullptr,                 // include handler
+        "main",                  // VS Entry point
+        "vs_2_0",                // Shader model
+        flag,
+        &compiledShader,
+        &errorMsgs,
+        &constantTable
+    );
+
+
+    if(result != 0) {
+        const char* msg = (const char*)errorMsgs->GetBufferPointer ();
+        MessageBoxA (nullptr,msg,"Vertex Shader Compile Error",MB_OK | MB_ICONERROR);
+    }
+    else {
+        vsCompiled = compiledShader->GetBufferPointer ();
+    }
+
+    return meshOut;
 }

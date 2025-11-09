@@ -87,6 +87,8 @@ extern "C"
 
     DLL_EXPORT int __fastcall dot3MeshVBRender9 (int,int,int,float*,int,DWORD**);
     DLL_EXPORT void dot3MeshVBDrawLight9(ST3D_Dot3_MeshVB*,IDirect3DDevice9*,float*,ST3D_LightInstance*,VertexGroup_Info*,unsigned int);
+    DLL_EXPORT int64_t __stdcall createShader9 (DWORD*,UINT*);
+    DLL_EXPORT int* __stdcall compileHLSLShader9 (const int*);
 
 #ifdef __cplusplus
 }

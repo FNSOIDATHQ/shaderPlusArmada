@@ -143,6 +143,12 @@ bool __stdcall activate () {
         // writeVarToAddressP ((void*)0x5AA102E4,sizeof (d3dtest_isD3D9),(void*)d3dtest_isD3D9);
 
         //all of commented code upon is not worked or won't be done for now
+        
+        //no longer use because D3DXCompileShaderFromFile do not support vs3.0/ps3.0
+        // createHook ((LPVOID)0x626E50,(LPVOID)compileHLSLShader9,reinterpret_cast<LPVOID*>(&CD3MVB));
+        // enableHook ((LPVOID)0x626E50);
+
+        hookVTable ((void**)0x6BC6AC,18,(void*)createShader9);
 
         hookJMP((void*)0x5A9F1CD4,dot3MeshVBRender9);
     }
