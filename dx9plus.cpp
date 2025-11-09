@@ -1,88 +1,10 @@
 #include "dx9plus.h"
 
-//DX library
-//from dx9.0c sdk
-#include <d3d9.h>
-#include <d3dx9.h>
-
-// ---------------------------------------------------------
-// Global engine parameters/structures
-// ---------------------------------------------------------
-
+// =========================================================
+//  External function/parameter pointers
+// =========================================================
 int* gRenderer = (int*)0x5AA126BC;         // Delphi Renderer instance pointer
 DWORD* dword_5A9EFDA0 = (DWORD*)0x5A9EFDA0;  // param passed to Renderer_create
-
-struct ST3D_Dot3_MeshVB
-{
-    void* vtable;
-    int m_num_vertex_groups;
-    VertexGroup_Info* m_vg_info;
-    void* m_mesh;
-};
-
-#pragma pack(push, 1)
-
-struct Matrix34
-{
-    Vector3 right;
-    Vector3 up;
-    Vector3 front;
-    Vector3 position;
-};
-
-struct SPHERE {
-    Vector3 origin;
-    float radius;
-};
-
-enum ST3D_Light_Type : int32_t
-{
-    ST3D_LIGHT_DIRECTIONAL = 1,
-    ST3D_LIGHT_POINT = 2,
-    ST3D_LIGHT_SPOT = 3,
-};
-
-struct ST3D_Colour
-{
-    float red;
-    float green;
-    float blue;
-};
-
-struct ST3D_Light
-{
-    char padding_to_C0[0xC0];
-
-    Matrix34 m_light_to_node;
-    ST3D_Light_Type m_light_type;
-    ST3D_Colour m_colour;
-    float m_falloff_start;
-    float m_falloff_range;
-    Matrix34 m_light_to_camera;
-};
-
-struct ST3D_LightInstance
-{
-    ST3D_Light* m_light;
-    ST3D_Colour m_colour;
-    Matrix34 m_transform;
-    int32_t m_autoDelete;
-};
-
-#pragma pack(pop)
-
-struct ST3D_GraphicsEngine
-{
-    char pad_0000[0x60];           // skip everything up to offset 0x5C
-    std::list<ST3D_LightInstance*> m_active_lights;
-    char pad_0068[0x58];
-    int m_current_device_index;     // 0xC0 (192)
-    char pad_00C4[0x8];
-    void* m_device[2];       // 0xCC (204) ST3D_Device*
-};
-// =========================================================
-//  External function pointers
-// =========================================================
 
 int (__stdcall* Renderer_create)(DWORD* param,int enable)
 = (decltype(Renderer_create))0x5A9EFDBC;
@@ -103,7 +25,7 @@ void (__thiscall* getShaderHandle9)(ST3D_GraphicsEngine* Storm3D,int id) = (decl
 IDirect3DVertexBuffer9* (__thiscall* getVertexBufferObject)(ST3D_GraphicsEngine* Storm3D,int id) = (decltype(getVertexBufferObject))0x62C1B0;
 IDirect3DIndexBuffer9* (__thiscall* getIndexBufferObject)(ST3D_GraphicsEngine* Storm3D,int id) = (decltype(getIndexBufferObject))0x62C210;
 
-// Per-light rendering
+// Per-light rendering vanilla FO
 // unsigned char (__thiscall* ST3D_Dot3_MeshVB_DrawLight_New_0)(
 //     void* self,
 //     IDirect3DDevice9* d3dDev9,
@@ -114,6 +36,21 @@ IDirect3DIndexBuffer9* (__thiscall* getIndexBufferObject)(ST3D_GraphicsEngine* S
 //     = (decltype(ST3D_Dot3_MeshVB_DrawLight_New_0))0x5A9F1ABC;
 
 static void* ST3D_Dot3_MeshVB_DrawLight_New_0 = (void*)0x5A9F1ABC;
+
+// =========================================================
+//  Helper Functions
+// =========================================================
+static inline Vector3 vec_sub (const Vector3& a,const Vector3& b) {
+    return Vector3{ a.x - b.x, a.y - b.y, a.z - b.z };
+}
+static inline float vec_len (const Vector3& v) {
+    return std::sqrt (v.x * v.x + v.y * v.y + v.z * v.z);
+}
+static inline Vector3 vec_norm (const Vector3& v) {
+    float l = vec_len (v);
+    if(l > 1e-8f) return Vector3{ v.x / l, v.y / l, v.z / l };
+    return Vector3{ 0.f,0.f,0.f };
+}
 
 
 //call every frame
@@ -312,20 +249,22 @@ int __fastcall dot3MeshVBRender9 (
         unsigned int resultRange = inRange (inst->m_light,spherePtr);
         if(resultRange) {
             //this is ugly! I will replace drawlight to my own function later
-            unsigned char resultDraw;
-            __asm {
-                mov     eax,self            // this
-                mov     edx,D3DDevice9      // device
-                mov     ecx,lightingMaterial// material
+            // unsigned char resultDraw;
+            // __asm {
+            //     mov     eax,self            // this
+            //     mov     edx,D3DDevice9      // device
+            //     mov     ecx,lightingMaterial// material
 
-                push    inst            // arg3 (first push)
-                push    vgi              // arg2
-                push    numFaces             // arg1
+            //     push    inst            // arg3 (first push)
+            //     push    vgi              // arg2
+            //     push    numFaces             // arg1
 
-                call    ST3D_Dot3_MeshVB_DrawLight_New_0       // callee RET 0x0C (clears 3 pushes)
+            //     call    ST3D_Dot3_MeshVB_DrawLight_New_0       // callee RET 0x0C (clears 3 pushes)
 
-                mov     resultDraw,al           // AL holds return value
-            }
+            //     mov     resultDraw,al           // AL holds return value
+            // }
+
+            dot3MeshVBDrawLight9 (self,D3DDevice9,lightingMaterial,inst,vgi,numFaces);
             setBlendingMode (ST3dDevice,2,2,0,1); // ONE, ONE
         }
     }
@@ -367,4 +306,77 @@ int __fastcall dot3MeshVBRender9 (
     return D3DDevice9->SetStreamSource (0,nullptr,0,0);
 
     // return sm_faces_remaining;
+}
+
+// Per-light rendering
+void dot3MeshVBDrawLight9 (
+    ST3D_Dot3_MeshVB* self,
+    IDirect3DDevice9* pD3DDevice9,
+    float* lightingMaterial,
+    ST3D_LightInstance* li,
+    VertexGroup_Info* info,
+    unsigned int numFaces) {
+
+    //
+    // 1. set light dir to c6
+    //
+    Vector3 lightDir = { 0,0,0 };
+    ST3D_Light* L = li->m_light;
+
+    SPHERE* sphere = reinterpret_cast<SPHERE*>((char*)self->m_mesh + 0xD4);
+
+    if(L->m_light_type == ST3D_LIGHT_DIRECTIONAL) {
+        Vector3 n = vec_norm (L->m_light_to_node.front);
+        lightDir = Vector3{ -n.x, -n.y, -n.z };
+    }
+    else if(L->m_light_type == ST3D_LIGHT_POINT) {
+        lightDir = vec_sub (L->m_light_to_node.position,sphere->origin);
+    }
+    else {
+        return;
+    }
+
+    float c6[4] = { lightDir.x, lightDir.y, lightDir.z, 0.0f };
+    pD3DDevice9->SetVertexShaderConstantF (6,c6,1);
+
+    //
+    // 2. calculate and set light color to TFACTOR
+    //
+    ST3D_Colour lightColor;
+    {
+        //lightingMaterial->diffuse
+        const float lm_r = lightingMaterial[9];
+        const float lm_g = lightingMaterial[10];
+        const float lm_b = lightingMaterial[11];
+
+        lightColor.red = lm_r * li->m_colour.red;
+        lightColor.green = lm_g * li->m_colour.green;
+        lightColor.blue = lm_b * li->m_colour.blue;
+    }
+
+    // 2.1 point light attenuation
+    if(L->m_light_type == ST3D_LIGHT_POINT) {
+        float d = vec_len (vec_sub (L->m_light_to_node.position,sphere->origin));
+        const float start = L->m_falloff_start;
+        const float range = L->m_falloff_range;
+
+        //out of range
+        if(d >= start + range) {
+            return;
+        }
+
+        if(d >= start) {
+            float att = 1.0f - (d - start) / range;
+            lightColor.red *= att;
+            lightColor.green *= att;
+            lightColor.blue *= att;
+        }
+    }
+
+    // 2.2 set to D3DRS_TEXTUREFACTOR
+    D3DCOLOR tf = D3DCOLOR_COLORVALUE (lightColor.red,lightColor.green,lightColor.blue,1.0f);
+    pD3DDevice9->SetRenderState (D3DRS_TEXTUREFACTOR,tf);
+
+    // 3. draw light final
+    pD3DDevice9->DrawIndexedPrimitive (D3DPT_TRIANGLELIST,0,0,info->num_vertices,0,numFaces);
 }

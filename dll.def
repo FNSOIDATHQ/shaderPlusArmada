@@ -12,3 +12,4 @@ EXPORTS
    drawLight
    disablePixelShaderInAlpha
    dot3MeshVBRender9
+   dot3MeshVBDrawLight9

@@ -190,8 +190,10 @@
 	<d3d9.h>
 	<d3dx9.h>
 
-1762574990 f:\resources\code\nebulapatch\shaderplus\dx9plus.h
+1762659518 f:\resources\code\nebulapatch\shaderplus\dx9plus.h
 	"loadHookTool.h"
+	<d3d9.h>
+	<d3dx9.h>
 
 1038931372 f:\resources\tools\directx\dx9.0csdk\include\d3d9.h
 	<stdlib.h>
