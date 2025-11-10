@@ -151,6 +151,8 @@ bool __stdcall activate () {
         // hookVTable ((void**)0x6BC6AC,18,(void*)createShader9);
 
         hookJMP((void*)0x5A9F1CD4,dot3MeshVBRender9Programmable);
+
+        hookVTable ((void**)0x6BC6AC,18,(void*)resetFXShader);
     }
 
     FreeLibrary (minHook);

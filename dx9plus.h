@@ -29,9 +29,28 @@ struct Matrix34
     Vector3 position;
 };
 
+struct Matrix44
+{
+    float m[4][4];
+};
+
+struct ST3D_Rect
+{
+    float x;
+    float y;
+    float width;
+    float height;
+};
+
 struct SPHERE {
     Vector3 origin;
     float radius;
+};
+
+struct Plane
+{
+    Vector3 normal;
+    float offset;
 };
 
 enum ST3D_Light_Type : int32_t
@@ -123,6 +142,24 @@ struct ST3D_LightInstance
     int32_t m_autoDelete;
 };
 
+struct alignas(16) ST3D_Camera
+{
+
+    uint8_t padding_to_C0[0xC0];
+    Matrix34 m_camera_to_world;
+    Matrix34 m_world_to_camera;
+    Matrix44 m_cam_to_clip;
+    Matrix44 m_world_to_clip;
+    float m_near_plane_distance;
+    float m_far_plane_distance;
+    float m_fov;
+    float m_aspect_ratio;
+    ST3D_Rect m_viewport;
+    Plane m_view_frustum_plane_equations[6];
+    Plane m_view_frustum_plane_equations_world_space[6];
+    uint32_t m_unique_id;
+};
+
 #pragma pack(pop)
 
 struct ST3D_GraphicsEngine
@@ -133,6 +170,8 @@ struct ST3D_GraphicsEngine
     int m_current_device_index;     // 0xC0 (192)
     char pad_00C4[0x8];
     void* m_device[2];       // 0xCC (204) ST3D_Device*
+    char pad_00D4[0x28];                       // 0xD4 - 0xFB
+    ST3D_Camera* m_camera;
 };
 
 #ifdef __cplusplus
@@ -145,6 +184,7 @@ extern "C"
     DLL_EXPORT void dot3MeshVBDrawLight9(ST3D_Dot3_MeshVB*,IDirect3DDevice9*,float*,ST3D_LightInstance*,VertexGroup_Info*,unsigned int);
     DLL_EXPORT int64_t __stdcall createShader9 (DWORD*,UINT*);
     DLL_EXPORT int* __stdcall compileHLSLShader9 (const int*);
+    DLL_EXPORT int64_t __stdcall resetFXShader (DWORD*,UINT*);
 
 #ifdef __cplusplus
 }

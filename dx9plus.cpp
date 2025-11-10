@@ -1,4 +1,5 @@
 #include "dx9plus.h"
+// #define DEBUG
 
 // =========================================================
 //  External function/parameter pointers
@@ -82,6 +83,22 @@ IDirect3DBaseTexture9* GetD3DTexture9FromStorm3DTexture (ST3D_GraphicsEngine* St
 
 
 //Shader related
+struct SDirLight
+{
+    D3DXVECTOR4 color;
+    D3DXVECTOR4 dir;
+};
+struct SPointLight
+{
+    D3DXVECTOR3 pos;
+    float falloffStart;
+    D3DXVECTOR3 color;
+    float falloffRange;
+};
+// 2 dir + 4 point
+SDirLight dirLights[2];
+SPointLight pointLights[4];
+
 IDirect3DDevice9* D3DDevice9;
 LPVOID vsCompiled;
 const DWORD* vsCompiledFX;
@@ -90,6 +107,9 @@ IDirect3DVertexShader9* vertexShader;
 
 ID3DXEffect* fxShader = nullptr;
 
+#ifdef DEBUG
+ID3DXFont* g_pFont = nullptr;
+#endif
 
 //original armada set shader constant in PreRender function
 //vertex shader + pixel shader
@@ -154,6 +174,7 @@ int __fastcall dot3MeshVBRender9Programmable (
     getPlatformSpecific (ST3dDevice,3,(int*)&D3DDevice9);
     // MessageBoxA(0, std::to_string((int)D3DDevice9).c_str(), "D3DDevice9 Value", MB_OK | MB_ICONINFORMATION);
 
+    getShaderHandle9 (Storm3D,shaderID);
     //compile shaders from fx file
     if(fxShader == nullptr) {
         // MessageBoxA (nullptr,"Start Compile FX","Notice",MB_OK | MB_ICONINFORMATION);
@@ -181,12 +202,26 @@ int __fastcall dot3MeshVBRender9Programmable (
             D3DDECL_END () // {0xFF, 0, D3DDECLTYPE_UNUSED, 0, 0, 0}
         };
         D3DDevice9->CreateVertexDeclaration (a2VertexElements,&vertexDeclaration);
+
+
     }
+#ifdef DEBUG
+    if(g_pFont == nullptr) {
+        D3DXCreateFontA (D3DDevice9,24,0,FW_NORMAL,1,FALSE,
+            DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,
+            ANTIALIASED_QUALITY,DEFAULT_PITCH | FF_DONTCARE,
+            "Arial",&g_pFont);
+    }
+#endif
 
     //set inputs
     ST3D_Texture* diffuse = (ST3D_Texture*)(*textures)[0];
     IDirect3DBaseTexture9* diffuseTex9 = GetD3DTexture9FromStorm3DTexture (Storm3D,diffuse);
     fxShader->SetTexture ("gDiffuse",diffuseTex9);
+
+    ST3D_Texture* bump = (ST3D_Texture*)(*textures)[1];
+    IDirect3DBaseTexture9* bumpTex9 = GetD3DTexture9FromStorm3DTexture (Storm3D,bump);
+    fxShader->SetTexture ("gBump",bumpTex9);
 
     D3DXMATRIX world,view,proj;
     D3DDevice9->GetTransform (D3DTS_WORLD,&world);
@@ -196,7 +231,43 @@ int __fastcall dot3MeshVBRender9Programmable (
     fxShader->SetMatrix ("gWorld",&world);
     fxShader->SetMatrix ("gView",&view);
     fxShader->SetMatrix ("gProj",&proj);
-    
+
+    std::list<ST3D_LightInstance*> activeLightList = Storm3D->m_active_lights;
+    int dirIndex = 0;
+    for(ST3D_LightInstance* inst : activeLightList) {
+        ST3D_Light* L = inst->m_light;
+
+        if(L->m_light_type == ST3D_LIGHT_DIRECTIONAL) {
+            dirLights[dirIndex].color.x = inst->m_colour.red;
+            dirLights[dirIndex].color.y = inst->m_colour.green;
+            dirLights[dirIndex].color.z = inst->m_colour.blue;
+
+            dirLights[dirIndex].dir.x = inst->m_transform.front.x;
+            dirLights[dirIndex].dir.y = inst->m_transform.front.y;
+            dirLights[dirIndex].dir.z = inst->m_transform.front.z;
+            dirIndex++;
+        }
+        else if(L->m_light_type == ST3D_LIGHT_POINT) {
+            //todo
+        }
+    }
+    D3DXHANDLE hDirLights = fxShader->GetParameterByName (nullptr,"dirLights");
+    fxShader->SetValue (hDirLights,dirLights,sizeof (dirLights));
+    fxShader->SetInt ("NumDirLights",dirIndex);
+
+    D3DXVECTOR4 envColor;
+    envColor.x = lightingMaterial[9];
+    envColor.y = lightingMaterial[10];
+    envColor.z = lightingMaterial[11];
+    fxShader->SetVector ("envColor",&envColor);
+
+    ST3D_Camera* camera = Storm3D->m_camera;
+    D3DXVECTOR4 cameraPos;
+    cameraPos.x = camera->m_camera_to_world.position.x;
+    cameraPos.y = camera->m_camera_to_world.position.y;
+    cameraPos.z = camera->m_camera_to_world.position.z;
+    fxShader->SetVector ("cameraPos",&cameraPos);
+
     IDirect3DVertexBuffer9* vbObj = getVertexBufferObject (Storm3D,vgi->vertex_buffer_id);
     IDirect3DIndexBuffer9* ibObj = getIndexBufferObject (Storm3D,vgi->index_buffer_id);
 
@@ -215,7 +286,38 @@ int __fastcall dot3MeshVBRender9Programmable (
         fxShader->EndPass ();
     }
     fxShader->End ();
-    // return sm_faces_remaining;
+
+#ifdef DEBUG
+    D3DDevice9->SetRenderState (D3DRS_ZENABLE,FALSE);
+    
+    std::string wtnChecker = "cameraMatrix=\n";
+
+    auto appendVec = [&](const char* name,const Vector3& v) {
+        wtnChecker += name;
+        wtnChecker += "(";
+        wtnChecker += std::to_string (v.x) + ", ";
+        wtnChecker += std::to_string (v.y) + ", ";
+        wtnChecker += std::to_string (v.z) + ")";
+        wtnChecker += " \n";
+        };
+
+    appendVec ("right",camera->m_camera_to_world.right);
+    appendVec ("up",camera->m_camera_to_world.up);
+    appendVec ("front",camera->m_camera_to_world.front);
+    appendVec ("position",camera->m_camera_to_world.position);
+
+    RECT rect = { 20, 200, 500, 1000 };
+    g_pFont->DrawTextA (
+        nullptr,
+        wtnChecker.c_str (),
+        -1,
+        &rect,
+        DT_LEFT | DT_TOP,
+        D3DCOLOR_ARGB (255,255,255,255)
+    );
+
+    D3DDevice9->SetRenderState (D3DRS_ZENABLE,TRUE);
+#endif
 }
 
 
@@ -636,4 +738,22 @@ int* __stdcall compileHLSLShader9 (const int* mesh) {
     }
 
     return meshOut;
+}
+
+
+//this is a hack
+int64_t __stdcall resetFXShader (DWORD* pShader,UINT* pDeclaration) {
+    // MessageBoxA(0, "createShader", "test", MB_OK | MB_ICONINFORMATION);
+
+    UINT thisPtr;
+    __asm {
+        call getThisPtrFromECX
+        mov thisPtr,eax
+    }
+
+    if(fxShader!=nullptr){
+        fxShader->Release();
+    }
+    fxShader=nullptr;
+    return (int64_t)pShader;
 }
