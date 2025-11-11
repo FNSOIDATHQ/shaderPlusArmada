@@ -1,4 +1,5 @@
 obj
 bin
+*.layout
 vc140.idb
 vc140.pdb

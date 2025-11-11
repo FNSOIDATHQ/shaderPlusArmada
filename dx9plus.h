@@ -11,7 +11,7 @@
 // Global engine structures
 // ---------------------------------------------------------
 
-struct ST3D_Dot3_MeshVB
+struct ST3D_MeshVB
 {
     void* vtable;
     int m_num_vertex_groups;
@@ -100,7 +100,6 @@ struct ST3D_Texture
 {
     void*               vtable;               // +0x00
     char                _padding00[0x18 - 4]; // +0x04 ~ +0x17
-
     unsigned int        m_flags;              // +0x18
     int                 m_width;              // +0x1C
     int                 m_height;             // +0x20
@@ -108,14 +107,9 @@ struct ST3D_Texture
     unsigned int        m_stride;             // +0x28
     unsigned char       m_colour_key_enabled; // +0x2C
     unsigned char       _padding2D[3];        // +0x2D~2F
-
     ST3D_Colour         m_colour_key;         // +0x30
-
     int                 m_num_mipmap_levels;  // +0x3C
-
-    // 实际关键点：每个设备都有一个 ST3D_DeviceTexture
-    ST3D_DeviceTexture* m_device_texture[2];  // +0x40 (2 个指针)
-
+    ST3D_DeviceTexture* m_device_texture[2];  // +0x40
     unsigned int        m_largest_mipmap_to_use; // +0x48
     ST3D_PixelFormat    m_format_override;       // +0x4C
     ST3D_TextureAddress m_address_u;             // +0x50
@@ -179,9 +173,11 @@ extern "C"
 {
 #endif
 
-    DLL_EXPORT int __fastcall dot3MeshVBRender9Programmable (int,int,int,float*,int,DWORD**);
+    DLL_EXPORT int __fastcall dot3MeshVBRenderInvoke (int,int,int,float*,int,DWORD**);
+    DLL_EXPORT int __fastcall standardMeshVBRenderInvoke (int,int,int,float*,int,DWORD**);
+    DLL_EXPORT int MeshRenderProgrammable (ST3D_MeshVB*,int,float*,DWORD**,bool);
     DLL_EXPORT int __fastcall dot3MeshVBRender9 (int,int,int,float*,int,DWORD**);
-    DLL_EXPORT void dot3MeshVBDrawLight9(ST3D_Dot3_MeshVB*,IDirect3DDevice9*,float*,ST3D_LightInstance*,VertexGroup_Info*,unsigned int);
+    DLL_EXPORT void dot3MeshVBDrawLight9(ST3D_MeshVB*,IDirect3DDevice9*,float*,ST3D_LightInstance*,VertexGroup_Info*,unsigned int);
     DLL_EXPORT int64_t __stdcall createShader9 (DWORD*,UINT*);
     DLL_EXPORT int* __stdcall compileHLSLShader9 (const int*);
     DLL_EXPORT int64_t __stdcall resetFXShader (DWORD*,UINT*);

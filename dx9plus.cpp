@@ -106,14 +106,13 @@ IDirect3DVertexDeclaration9* vertexDeclaration;
 IDirect3DVertexShader9* vertexShader;
 
 ID3DXEffect* fxShader = nullptr;
+ID3DXEffect* fxShaderBump = nullptr;
 
 #ifdef DEBUG
 ID3DXFont* g_pFont = nullptr;
 #endif
 
-//original armada set shader constant in PreRender function
-//vertex shader + pixel shader
-int __fastcall dot3MeshVBRender9Programmable (
+int __fastcall dot3MeshVBRenderInvoke (
     int padding1,
     int padding2,
     int vgIndex,           // [ebp+ 8]
@@ -121,12 +120,39 @@ int __fastcall dot3MeshVBRender9Programmable (
     int padding3,
     DWORD** textures)    // [ebp+14]
 {
-    ST3D_Dot3_MeshVB* self;
+    ST3D_MeshVB* self;
+    __asm {
+        call getThisPtrFromECX
+        mov self,eax
+    }
+    int result=MeshRenderProgrammable (self,vgIndex,lightingMaterial,textures,true);
+
+    return result;
+}
+
+int __fastcall standardMeshVBRenderInvoke (
+    int padding1,
+    int padding2,
+    int vgIndex,           // [ebp+ 8]
+    float* lightingMaterial,                // [ebp+ C]
+    int padding3,
+    DWORD** textures)    // [ebp+14]
+{
+    ST3D_MeshVB* self;
     __asm {
         call getThisPtrFromECX
         mov self,eax
     }
 
+    MessageBoxA(0, "invoking standard mesh", "Checker", MB_OK | MB_ICONINFORMATION);
+    int result=MeshRenderProgrammable (self,vgIndex,lightingMaterial,textures,false);
+
+    return result;
+}
+
+//original armada set shader constant in PreRender function
+//vertex shader + pixel shader
+int MeshRenderProgrammable (ST3D_MeshVB* self,int vgIndex,float* lightingMaterial,DWORD** textures,bool dot3Invoked) {
     // i dont think this will actually do anything
     // if(*gRenderer == 0) {
     //     *gRenderer = Renderer_create (dword_5A9EFDA0,1);
@@ -139,22 +165,25 @@ int __fastcall dot3MeshVBRender9Programmable (
     // Apply face limiting (Storm3D feature)
     int* sm_faces_remaining_ptr = (int*)0x72C3F4;
     int sm_faces_remaining = *sm_faces_remaining_ptr;
-    if(sm_faces_remaining != -1) {
-        if(sm_faces_remaining < numFaces) {
-            numFaces = *sm_faces_remaining_ptr;
+    if(dot3Invoked == true) {
+        if(sm_faces_remaining != -1) {
+            if(sm_faces_remaining < numFaces) {
+                numFaces = *sm_faces_remaining_ptr;
+            }
+
+            *sm_faces_remaining_ptr -= numFaces;
+
+            //i am not pretty sure, but guess original code is wrong
+            //sm_faces_remaining = *(_DWORD *)off_5AA12624
+            sm_faces_remaining = *sm_faces_remaining_ptr;
         }
 
-        *sm_faces_remaining_ptr -= numFaces;
-
-        //i am not pretty sure, but guess original code is wrong
-        //sm_faces_remaining = *(_DWORD *)off_5AA12624
-        sm_faces_remaining = *sm_faces_remaining_ptr;
+        //skip if we do not have poly budget
+        if(numFaces <= 0) {
+            return sm_faces_remaining;
+        }
     }
 
-    //skip if we do not have poly budget
-    if(numFaces <= 0) {
-        return sm_faces_remaining;
-    }
 
     // Direct3D device from engine
     ST3D_GraphicsEngine* Storm3D = *(ST3D_GraphicsEngine**)0x7AD508;
@@ -164,10 +193,6 @@ int __fastcall dot3MeshVBRender9Programmable (
 
     //get vtable functions
     getPlatformSpecific = (int (__thiscall*)(void*,int,int*))(getClassFunctionAddress ((DWORD*)ST3dDevice,48));
-    setTexture = (void (__thiscall*)(void*,DWORD,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,25));
-    setBlendingMode = (void (__thiscall*)(void*,int,int,int,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,36));
-    setSpecularEnable = (void (__thiscall*)(void*,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,40));
-    setDiffuseEnable = (void (__thiscall*)(void*,int))(getClassFunctionAddress ((DWORD*)ST3dDevice,41));
 
 
     D3DDevice9 = nullptr;
@@ -180,14 +205,25 @@ int __fastcall dot3MeshVBRender9Programmable (
         // MessageBoxA (nullptr,"Start Compile FX","Notice",MB_OK | MB_ICONINFORMATION);
         LPD3DXBUFFER errorMsgs = nullptr;
         LPCSTR FXPath = "shaders\\dx9\\pbrLite.fx";
-        HRESULT result = D3DXCreateEffectFromFileA (D3DDevice9,FXPath,nullptr,nullptr,0,nullptr,&fxShader,&errorMsgs);
+        D3DXMACRO macros[] =
+        {
+            { "BUMP", "1" },
+            { nullptr, nullptr }
+        };
 
+        HRESULT result = D3DXCreateEffectFromFileA (D3DDevice9,FXPath,nullptr,nullptr,0,nullptr,&fxShader,&errorMsgs);
         if(result != 0) {
             const char* msg = (const char*)errorMsgs->GetBufferPointer ();
             MessageBoxA (nullptr,msg,"FX Shader Compile Error",MB_OK | MB_ICONERROR);
         }
-
         fxShader->SetTechnique ("pbrLite");
+
+        result = D3DXCreateEffectFromFileA (D3DDevice9,FXPath,macros,nullptr,0,nullptr,&fxShaderBump,&errorMsgs);
+        if(result != 0) {
+            const char* msg = (const char*)errorMsgs->GetBufferPointer ();
+            MessageBoxA (nullptr,msg,"FX Shader <Bump> Compile Error",MB_OK | MB_ICONERROR);
+        }
+        fxShaderBump->SetTechnique ("pbrLite");
 
 
         D3DVERTEXELEMENT9 a2VertexElements[] =
@@ -214,23 +250,34 @@ int __fastcall dot3MeshVBRender9Programmable (
     }
 #endif
 
+    //Select Shader
+    ID3DXEffect* fxShaerCur;
+    if(dot3Invoked == true) {
+        fxShaerCur = fxShaderBump;
+    }
+    else {
+        fxShaerCur = fxShader;
+    }
     //set inputs
     ST3D_Texture* diffuse = (ST3D_Texture*)(*textures)[0];
     IDirect3DBaseTexture9* diffuseTex9 = GetD3DTexture9FromStorm3DTexture (Storm3D,diffuse);
-    fxShader->SetTexture ("gDiffuse",diffuseTex9);
+    fxShaerCur->SetTexture ("gDiffuse",diffuseTex9);
 
-    ST3D_Texture* bump = (ST3D_Texture*)(*textures)[1];
-    IDirect3DBaseTexture9* bumpTex9 = GetD3DTexture9FromStorm3DTexture (Storm3D,bump);
-    fxShader->SetTexture ("gBump",bumpTex9);
+    if(dot3Invoked == true) {
+        ST3D_Texture* bump = (ST3D_Texture*)(*textures)[1];
+        IDirect3DBaseTexture9* bumpTex9 = GetD3DTexture9FromStorm3DTexture (Storm3D,bump);
+        fxShaerCur->SetTexture ("gBump",bumpTex9);
+    }
+
 
     D3DXMATRIX world,view,proj;
     D3DDevice9->GetTransform (D3DTS_WORLD,&world);
     D3DDevice9->GetTransform (D3DTS_VIEW,&view);
     D3DDevice9->GetTransform (D3DTS_PROJECTION,&proj);
 
-    fxShader->SetMatrix ("gWorld",&world);
-    fxShader->SetMatrix ("gView",&view);
-    fxShader->SetMatrix ("gProj",&proj);
+    fxShaerCur->SetMatrix ("gWorld",&world);
+    fxShaerCur->SetMatrix ("gView",&view);
+    fxShaerCur->SetMatrix ("gProj",&proj);
 
     std::list<ST3D_LightInstance*> activeLightList = Storm3D->m_active_lights;
     int dirIndex = 0;
@@ -251,22 +298,22 @@ int __fastcall dot3MeshVBRender9Programmable (
             //todo
         }
     }
-    D3DXHANDLE hDirLights = fxShader->GetParameterByName (nullptr,"dirLights");
-    fxShader->SetValue (hDirLights,dirLights,sizeof (dirLights));
-    fxShader->SetInt ("NumDirLights",dirIndex);
+    D3DXHANDLE hDirLights = fxShaerCur->GetParameterByName (nullptr,"dirLights");
+    fxShaerCur->SetValue (hDirLights,dirLights,sizeof (dirLights));
+    fxShaerCur->SetInt ("NumDirLights",dirIndex);
 
     D3DXVECTOR4 envColor;
     envColor.x = lightingMaterial[9];
     envColor.y = lightingMaterial[10];
     envColor.z = lightingMaterial[11];
-    fxShader->SetVector ("envColor",&envColor);
+    fxShaerCur->SetVector ("envColor",&envColor);
 
     ST3D_Camera* camera = Storm3D->m_camera;
     D3DXVECTOR4 cameraPos;
     cameraPos.x = camera->m_camera_to_world.position.x;
     cameraPos.y = camera->m_camera_to_world.position.y;
     cameraPos.z = camera->m_camera_to_world.position.z;
-    fxShader->SetVector ("cameraPos",&cameraPos);
+    fxShaerCur->SetVector ("cameraPos",&cameraPos);
 
     IDirect3DVertexBuffer9* vbObj = getVertexBufferObject (Storm3D,vgi->vertex_buffer_id);
     IDirect3DIndexBuffer9* ibObj = getIndexBufferObject (Storm3D,vgi->index_buffer_id);
@@ -274,22 +321,22 @@ int __fastcall dot3MeshVBRender9Programmable (
 
     //Rendering
     UINT passes;
-    fxShader->Begin (&passes,0);
+    fxShaerCur->Begin (&passes,0);
     for(UINT p = 0; p < passes; ++p) {
-        fxShader->BeginPass (p);
+        fxShaerCur->BeginPass (p);
 
         D3DDevice9->SetStreamSource (0,vbObj,0,68);
         D3DDevice9->SetVertexDeclaration (vertexDeclaration);
         D3DDevice9->SetIndices (ibObj);
         D3DDevice9->DrawIndexedPrimitive (D3DPT_TRIANGLELIST,0,0,vgi->num_vertices,0,numFaces);
 
-        fxShader->EndPass ();
+        fxShaerCur->EndPass ();
     }
-    fxShader->End ();
+    fxShaerCur->End ();
 
 #ifdef DEBUG
     D3DDevice9->SetRenderState (D3DRS_ZENABLE,FALSE);
-    
+
     std::string wtnChecker = "cameraMatrix=\n";
 
     auto appendVec = [&](const char* name,const Vector3& v) {
@@ -318,6 +365,9 @@ int __fastcall dot3MeshVBRender9Programmable (
 
     D3DDevice9->SetRenderState (D3DRS_ZENABLE,TRUE);
 #endif
+
+
+    return sm_faces_remaining;
 }
 
 
@@ -334,7 +384,7 @@ int __fastcall dot3MeshVBRender9 (
     int padding3,
     DWORD** textures)    // [ebp+14]
 {
-    ST3D_Dot3_MeshVB* self;
+    ST3D_MeshVB* self;
     __asm {
         call getThisPtrFromECX
         mov self,eax
@@ -604,7 +654,7 @@ int __fastcall dot3MeshVBRender9 (
 
 // Per-light rendering
 void dot3MeshVBDrawLight9 (
-    ST3D_Dot3_MeshVB* self,
+    ST3D_MeshVB* self,
     IDirect3DDevice9* pD3DDevice9,
     float* lightingMaterial,
     ST3D_LightInstance* li,
@@ -751,9 +801,9 @@ int64_t __stdcall resetFXShader (DWORD* pShader,UINT* pDeclaration) {
         mov thisPtr,eax
     }
 
-    if(fxShader!=nullptr){
-        fxShader->Release();
+    if(fxShader != nullptr) {
+        fxShader->Release ();
     }
-    fxShader=nullptr;
+    fxShader = nullptr;
     return (int64_t)pShader;
 }
